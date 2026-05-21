@@ -1,0 +1,210 @@
+﻿# Eslami Electric — Android (customer v1)
+
+Native **Kotlin + Jetpack Compose** customer app for [Eslami Electric](https://www.eslamielectric.com). Not a TWA.
+
+| Topic | Location |
+|--------|----------|
+| HTTP API contract | [`cursor-my-web-app/docs/mobile-api.md`](../cursor-my-web-app/docs/mobile-api.md) |
+| Web backend | [`cursor-my-web-app`](../cursor-my-web-app) (Express + Supabase + Stripe) |
+
+## Prerequisites
+
+- **Android Studio** Ladybug (2024.2+) or newer with SDK 34
+- **JDK 17** (Embedded JDK in Android Studio is fine)
+- Running web API for debug (default `http://localhost:3000`) or a deployed staging/production URL
+
+## Open the project
+
+1. Clone this repo (or copy from `cursor-my-web-app/android-export` if you used the fallback path).
+2. Android Studio → **Open** → select this folder.
+3. Copy `local.properties.example` → `local.properties` if Studio does not create it (set `sdk.dir` to your Android SDK).
+4. **Sync Project with Gradle Files**, then Run on emulator or device.
+
+### Gradle wrapper
+
+If `gradlew.bat` / `gradle-wrapper.jar` are missing, either:
+
+- Let Android Studio generate the wrapper on first sync, or
+- From the project root (with Gradle installed): `gradle wrapper --gradle-version 8.7`
+
+Verify from project root (requires **JDK 17** on `JAVA_HOME`):
+
+```bat
+gradlew.bat tasks
+```
+
+If Gradle reports Java 8, set `JAVA_HOME` to JDK 17 or adjust `org.gradle.java.home` in `gradle.properties`.
+
+### Gradle sync failed / JDK
+
+**Symptoms:** “No matching variant of `com.android.tools.build:gradle:8.5.2`”, Java 11 compatibility warnings, only **Gradle Scripts** visible (no **app** module), Run disabled.
+
+**Cause:** This project uses **Android Gradle Plugin 8.5.2**, which needs **Gradle 8.7+** and **JDK 17**. Android Studio was using an old **Java 8 JRE** (`Android Studio\jre`) instead of **JBR 17**.
+
+**Fix in Android Studio (recommended):**
+
+1. **File → Settings** (Windows) or **Android Studio → Settings** (macOS).
+2. **Build, Execution, Deployment → Build Tools → Gradle**.
+3. **Gradle JDK** → choose **Embedded JDK (17)** or **jbr-17** (not `jre` / Java 8).
+4. If no JDK 17 is listed: **Download JDK…** → version **17**, vendor **JetBrains Runtime** or **Eclipse Temurin**.
+5. **Apply → OK**, then **File → Sync Project with Gradle Files**.
+
+**Fix via `gradle.properties` (when Studio keeps picking Java 8):**
+
+Default path (modern Android Studio):
+
+```properties
+org.gradle.java.home=C\:\\Program Files\\Android\\Android Studio\\jbr
+```
+
+Older Studio installs without a `jbr` folder — use a standalone JDK 17 instead (uncomment/adjust in `gradle.properties`):
+
+```properties
+org.gradle.java.home=C\:\\Program Files\\Java\\jdk-17
+```
+
+**Verify from project root:**
+
+```bat
+set JAVA_HOME=C:\Program Files\Java\jdk-17
+gradlew.bat tasks
+```
+
+You should see `:app` tasks (e.g. `assembleDebug`) and the **app** module in the Project view after a successful sync.
+
+## API base URL
+
+Configured via `BuildConfig.API_BASE_URL` in `app/build.gradle.kts`:
+
+| Build type | Default |
+|------------|---------|
+| **debug** | `http://10.0.2.2:3000` (Android emulator → host machine `localhost:3000`) |
+| **release** | `https://www.eslamielectric.com` |
+
+Override release/staging in `app/build.gradle.kts` or add product flavors. Physical device debugging: use your machine LAN IP, e.g. `http://192.168.1.10:3000`, and ensure cleartext is allowed (already enabled for debug in `AndroidManifest.xml`).
+
+**Do not commit** API keys or Stripe secrets; the app only calls your backend over HTTPS (or HTTP in local debug).
+
+## v1 scope (this scaffold)
+
+- Bottom navigation shell: Home, Products, Basket, Account
+- Retrofit `ApiService` aligned with `mobile-api.md`
+- Local basket (DataStore JSON, same fields as web `localStorage` `basket`)
+- JWT in EncryptedSharedPreferences; locale in DataStore
+- RTL via `CompositionLocalLayoutDirection` when locale is `fa`
+- Stripe Checkout helper: `StripeCheckoutTabs` (AndroidX Browser Custom Tabs)
+- EN / FA `strings.xml`
+- Launcher icon copied from web `public/icons/icon-192.png`
+
+**Phase 2 (catalog):** Products tab loads `GET /api/products` with loading/error/empty states; Home shows first 6 products + “View all products”; shared `ProductCard` (Coil, USD price, add to basket); Basket tab with qty +/-, remove, and total.
+
+**Phase 3 (auth & account):** Login, sign up, forgot password, profile edit; JWT in `SessionStore`; OkHttp attaches `Authorization: Bearer`; 401 on `/api/me` clears token and returns to login.
+
+**Phase 4 (checkout):** Basket → checkout screen; delivery/collection; guest or logged-in checkout; Stripe Custom Tab; return handling via `confirm-by-session` + `by-session`; success/incomplete result screen.
+
+**Phase 5 (orders):** My orders list + detail (logged in); guest track (email + order number or tracking token); pending cancel / resume Stripe checkout; 401 clears session.
+
+**Phase 6 (polish & web parity):** FA/EN locale toggle with RTL; product detail screen; products search + category chips; basket tab badge; pull-to-refresh; guest order deep links; lightweight loading placeholders.
+
+**Phase 3b (later):** Google OAuth, Telegram login, reset-password deep link.
+
+**Not in v1:** Admin APIs.
+
+## Package layout
+
+```
+app/src/main/java/com/eslamielectric/android/
+  core/network/     ApiService, DTOs, Retrofit
+  core/data/        BasketRepository, SessionStore
+  feature/catalog/  CatalogRepository, CatalogViewModel
+  ui/components/    ProductCard, CatalogContent, BasketLineRow
+  ui/screens/       Home, Products, Basket, Checkout, auth/account screens
+  feature/basket/   CheckoutRepository, CheckoutViewModel
+  feature/auth/     AuthRepository, ViewModels
+  feature/orders/   OrdersRepository, OrdersViewModels
+  ui/               Compose theme, navigation, placeholder screens
+  util/             StripeCheckoutTabs
+```
+
+## Play Store notes (later)
+
+- Target production `API_BASE_URL` and HTTPS only for release builds
+- Privacy policy URL, account deletion (web supports `/api/account/request-deletion`)
+- Test Stripe **live** vs **test** keys match backend environment
+- Content rating, screenshots (EN + FA), Data safety form
+
+## Phase 2 — Catalog UI (done)
+
+1. Start the web API on your PC: in `cursor-my-web-app`, run `npm start` (default port **3000**).
+2. Android Studio → Run **debug** on an emulator (`API_BASE_URL` = `http://10.0.2.2:3000`).
+3. **Home:** up to 6 products from `/api/products`; tap **View all products** → Products tab.
+4. **Products:** full grid; **Add to basket** merges lines by product id (DataStore, same shape as web `basket`).
+5. **Basket:** change quantity, remove lines, see USD subtotal.
+6. If the API is down, Products/Home show a retry screen mentioning `npm start`.
+
+Physical device: set debug `API_BASE_URL` to your machine LAN IP (e.g. `http://192.168.1.10:3000`) in `app/build.gradle.kts`.
+
+## Phase 3 — Auth & account (done)
+
+1. Start the web API: `npm start` in `cursor-my-web-app` (port **3000**).
+2. Run the app on the emulator (`http://10.0.2.2:3000`).
+3. **Account** tab (logged out): **Log in** / **Sign up**.
+4. **Sign up:** person or company; required fields match `POST /api/users` (see `lib/schemas/auth.js`).
+5. **Log in:** email + password → JWT stored in EncryptedSharedPreferences.
+6. Logged-in **Account:** name/email from `GET /api/me`, **Profile**, **Log out**.
+7. **Profile:** edit and **Save** (`PATCH /api/me`); API validation errors shown inline.
+8. **Forgot password:** email only; generic success message from API.
+9. Wrong password / lockout (**423**) / rate limit (**429**) show on the login screen.
+
+**Phase 3b:** Google OAuth, Telegram, in-app reset-password deep link (use web reset link for now).
+
+## Phase 4 — Checkout (done)
+
+1. Start the web API with Stripe **test** keys: `npm start` in `cursor-my-web-app` (port **3000**).
+2. Run the app on the emulator (`http://10.0.2.2:3000`).
+3. Add products to the basket → **Proceed to checkout**.
+4. Choose **Delivery** or **Collection**; for delivery, enter a street address (≥ 5 characters).
+5. **Guest:** fill name + email (and optional phone). **Logged in:** JWT is sent automatically; complete profile if API returns `PROFILE_INCOMPLETE` (link opens Profile).
+6. Tap **Pay with Stripe** → Chrome Custom Tab opens Stripe Checkout.
+7. Pay with test card **4242 4242 4242 4242**, any future expiry, any CVC.
+8. Close Custom Tab / return to app → payment is verified (`POST /api/orders/confirm-by-session`, `GET /api/orders/by-session`); basket clears on success; result screen shows order number.
+9. Cancel Stripe or use a declined test card → incomplete result screen; basket unchanged.
+
+**Errors:** empty basket blocked; `SESSION_EXPIRED` → Account login; rate limit (**429**) shown inline.
+
+## Phase 5 — Orders (done)
+
+1. Start the web API: `npm start` in `cursor-my-web-app` (port **3000**).
+2. Run the app on the emulator (`http://10.0.2.2:3000`).
+3. **Logged in:** Account → **My orders** → list (number, date, total, status, fulfillment) → tap for detail.
+4. **Pending order (logged in):** **Complete payment** opens Stripe Custom Tab; **Cancel order** confirms then refreshes.
+5. **Logged out:** Account → **Track guest order** → email + order number (e.g. `ORD-…`) **or** tracking token from confirmation email.
+6. Guest lookup by email shows detail; pay/cancel need the **tracking token** (same as web `order.html?token=…`).
+7. Expired JWT on orders APIs → session cleared → log in again.
+
+## Planned phases
+
+| Phase | Work |
+|-------|------|
+| **2** | ✅ Catalog grid, home featured strip, basket lines |
+| **3** | ✅ Login, signup, profile, forgot password |
+| **4** | ✅ Checkout (fulfillment, guest/logged-in, Stripe Custom Tab, return handling) |
+| **5** | ✅ Orders list, detail, guest lookup, pending resume/cancel |
+| **6** | ✅ Locale FA/RTL, product detail, search/categories, basket badge, pull-to-refresh, guest order deep link |
+
+## Phase 6 — Polish & web parity (done)
+
+1. Start the web API: `npm start` in `cursor-my-web-app` (port **3000**).
+2. Run the app on the emulator (`http://10.0.2.2:3000`).
+3. **Language:** Account tab → **English** / **فارسی** toggle. UI mirrors to RTL; product names use `name_fa` when FA is selected; `values-fa/strings.xml` applied via locale config.
+4. **Product detail:** Tap a product on Home or Products → detail screen (image, localized name/description, category, price, **Add to basket**).
+5. **Products search & categories:** Products tab → search field filters the loaded catalog; horizontal category chips from `GET /api/categories` (fallback: derived from products).
+6. **Basket badge:** Add items → Basket tab icon shows total item count.
+7. **Pull-to-refresh:** Home, Products, and My orders lists support pull-down refresh.
+8. **Guest order deep link:** Open `https://www.eslamielectric.com/order.html?token=YOUR_TOKEN` or `eslamielectric://order?token=YOUR_TOKEN` on the device → app opens guest order detail.
+
+**Deferred:** Google OAuth, push notifications, full offline cache, Play internal testing track setup.
+
+## License
+
+Proprietary — Eslami Electric.

@@ -1,0 +1,434 @@
+package com.eslamielectric.android.ui.navigation
+
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.navigation.NavGraph.Companion.findStartDestination
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.eslamielectric.android.core.data.BasketRepository
+import com.eslamielectric.android.core.data.SessionStore
+import com.eslamielectric.android.feature.auth.AuthRepository
+import com.eslamielectric.android.feature.basket.CheckoutRepository
+import com.eslamielectric.android.feature.catalog.CatalogRepository
+import com.eslamielectric.android.feature.orders.OrdersRepository
+import com.eslamielectric.android.ui.screens.AccountHomeScreen
+import com.eslamielectric.android.ui.screens.GuestTrackScreen
+import com.eslamielectric.android.ui.screens.MyOrdersScreen
+import com.eslamielectric.android.ui.screens.OrderDetailScreen
+import com.eslamielectric.android.ui.screens.BasketScreen
+import com.eslamielectric.android.ui.screens.CheckoutResultScreen
+import com.eslamielectric.android.ui.screens.CheckoutScreen
+import com.eslamielectric.android.ui.screens.ForgotPasswordScreen
+import com.eslamielectric.android.ui.screens.HomeScreen
+import com.eslamielectric.android.ui.screens.LoginScreen
+import com.eslamielectric.android.ui.screens.ProductDetailScreen
+import com.eslamielectric.android.ui.screens.ProductsScreen
+import com.eslamielectric.android.ui.screens.ProfileScreen
+import com.eslamielectric.android.ui.screens.SignUpScreen
+import kotlinx.coroutines.launch
+
+@Composable
+fun AppNavHost(
+    basketRepository: BasketRepository,
+    catalogRepository: CatalogRepository,
+    authRepository: AuthRepository,
+    checkoutRepository: CheckoutRepository,
+    ordersRepository: OrdersRepository,
+    sessionStore: SessionStore,
+    locale: String = "en",
+    deepLinkGuestToken: String? = null,
+    onDeepLinkConsumed: () -> Unit = {},
+    onLocaleChanged: (String) -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    val navController = rememberNavController()
+    val backStack by navController.currentBackStackEntryAsState()
+    val currentRoute = backStack?.destination?.route
+    val basketItems by basketRepository.itemsFlow.collectAsState(initial = emptyList())
+    val basketCount = basketRepository.itemCount(basketItems)
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(deepLinkGuestToken) {
+        val token = deepLinkGuestToken?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        navController.navigate(CatalogRoutes.guestOrderByToken(token)) {
+            launchSingleTop = true
+        }
+        onDeepLinkConsumed()
+    }
+
+    val currentRouteBase = currentRoute?.substringBefore('?')?.substringBefore("/{")
+    val showBottomBar = currentRouteBase in AppDestinations.bottomNav.map { it.route }
+
+    Scaffold(
+        modifier = modifier,
+        bottomBar = {
+            if (showBottomBar) {
+                NavigationBar {
+                    AppDestinations.bottomNav.forEach { dest ->
+                        NavigationBarItem(
+                            selected = currentRouteBase == dest.route,
+                            onClick = {
+                                navController.navigate(dest.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = {
+                                if (dest == AppDestinations.Basket && basketCount > 0) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge { Text(basketCount.toString()) }
+                                        }
+                                    ) {
+                                        Icon(dest.icon, contentDescription = null)
+                                    }
+                                } else {
+                                    Icon(dest.icon, contentDescription = null)
+                                }
+                            },
+                            label = { Text(stringResource(dest.labelRes)) }
+                        )
+                    }
+                }
+            }
+        }
+    ) { innerPadding ->
+        NavHost(
+            navController = navController,
+            startDestination = AppDestinations.Home.route,
+            modifier = Modifier.padding(innerPadding)
+        ) {
+            composable(AppDestinations.Home.route) {
+                HomeScreen(
+                    catalogRepository = catalogRepository,
+                    basketRepository = basketRepository,
+                    locale = locale,
+                    onViewAllProducts = {
+                        navController.navigate(AppDestinations.Products.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onProductClick = { product ->
+                        navController.navigate(CatalogRoutes.productDetail(product.id))
+                    }
+                )
+            }
+            composable(AppDestinations.Products.route) {
+                ProductsScreen(
+                    catalogRepository = catalogRepository,
+                    basketRepository = basketRepository,
+                    locale = locale,
+                    onProductClick = { product ->
+                        navController.navigate(CatalogRoutes.productDetail(product.id))
+                    }
+                )
+            }
+            composable(
+                route = CatalogRoutes.PRODUCT_DETAIL,
+                arguments = listOf(navArgument("productId") { type = NavType.StringType })
+            ) { entry ->
+                val productId = entry.arguments?.getString("productId").orEmpty()
+                ProductDetailScreen(
+                    productId = productId,
+                    catalogRepository = catalogRepository,
+                    basketRepository = basketRepository,
+                    locale = locale,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+            composable(
+                route = CatalogRoutes.GUEST_ORDER_BY_TOKEN,
+                arguments = listOf(navArgument("token") { type = NavType.StringType })
+            ) { entry ->
+                val token = entry.arguments?.getString("token").orEmpty()
+                OrderDetailScreen(
+                    ordersRepository = ordersRepository,
+                    orderId = "",
+                    guestToken = token,
+                    isGuest = true,
+                    locale = locale,
+                    onBack = {
+                        navController.navigate(AppDestinations.Account.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    onSessionExpired = {
+                        navController.navigate("${AppDestinations.Account.route}?openLogin=true") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    },
+                    onProfileIncomplete = {
+                        navController.navigate("${AppDestinations.Account.route}?openProfile=true") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                )
+            }
+            composable(AppDestinations.Basket.route) {
+                BasketScreen(
+                    items = basketItems,
+                    basketRepository = basketRepository,
+                    onProceedToCheckout = {
+                        navController.navigate(CheckoutRoutes.CHECKOUT)
+                    }
+                )
+            }
+            composable(CheckoutRoutes.CHECKOUT) {
+                CheckoutScreen(
+                    checkoutRepository = checkoutRepository,
+                    authRepository = authRepository,
+                    basketRepository = basketRepository,
+                    locale = locale,
+                    onBack = { navController.popBackStack() },
+                    onSessionExpired = {
+                        navController.navigate("${AppDestinations.Account.route}?openLogin=true") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onNavigateToProfile = {
+                        navController.navigate("${AppDestinations.Account.route}?openProfile=true") {
+                            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    onPaymentComplete = { order ->
+                        navController.navigate(CheckoutRoutes.result(true, order.orderNumber)) {
+                            popUpTo(CheckoutRoutes.CHECKOUT) { inclusive = true }
+                        }
+                    },
+                    onPaymentIncomplete = {
+                        navController.navigate(CheckoutRoutes.result(false, null)) {
+                            popUpTo(CheckoutRoutes.CHECKOUT) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            composable(
+                route = CheckoutRoutes.RESULT,
+                arguments = listOf(
+                    navArgument("success") { type = NavType.BoolType },
+                    navArgument("orderNumber") { type = NavType.StringType }
+                )
+            ) { entry ->
+                val success = entry.arguments?.getBoolean("success") ?: false
+                val orderNumber = entry.arguments?.getString("orderNumber")?.takeIf { it != "-" }
+                CheckoutResultScreen(
+                    success = success,
+                    order = if (orderNumber != null) {
+                        com.eslamielectric.android.core.network.OrderDto(
+                            id = "",
+                            orderNumber = orderNumber
+                        )
+                    } else {
+                        null
+                    },
+                    message = null,
+                    onDone = {
+                        navController.navigate(AppDestinations.Home.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+            composable(
+                route = "${AppDestinations.Account.route}?openProfile={openProfile}&openLogin={openLogin}",
+                arguments = listOf(
+                    navArgument("openProfile") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                    navArgument("openLogin") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    }
+                )
+            ) { entry ->
+                val openProfile = entry.arguments?.getBoolean("openProfile") ?: false
+                val openLogin = entry.arguments?.getBoolean("openLogin") ?: false
+                val accountNav = rememberNavController()
+                val accountStart = when {
+                    openLogin -> AccountRoutes.LOGIN
+                    openProfile -> AccountRoutes.PROFILE
+                    else -> AccountRoutes.HOME
+                }
+                NavHost(
+                    navController = accountNav,
+                    startDestination = accountStart
+                ) {
+                    composable(AccountRoutes.HOME) {
+                        AccountHomeScreen(
+                            authRepository = authRepository,
+                            locale = locale,
+                            onLocaleChange = { newLocale ->
+                                scope.launch {
+                                    sessionStore.setLocale(newLocale)
+                                    onLocaleChanged(newLocale)
+                                }
+                            },
+                            onLogin = { accountNav.navigate(AccountRoutes.LOGIN) },
+                            onSignUp = { accountNav.navigate(AccountRoutes.SIGNUP) },
+                            onProfile = { accountNav.navigate(AccountRoutes.PROFILE) },
+                            onMyOrders = { accountNav.navigate(AccountRoutes.ORDERS) },
+                            onGuestTrack = { accountNav.navigate(AccountRoutes.GUEST_TRACK) }
+                        )
+                    }
+                    composable(AccountRoutes.ORDERS) {
+                        MyOrdersScreen(
+                            ordersRepository = ordersRepository,
+                            locale = locale,
+                            onBack = { accountNav.popBackStack() },
+                            onOrderClick = { order ->
+                                accountNav.navigate(OrderRoutes.orderDetail(order.id))
+                            },
+                            onSessionExpired = {
+                                accountNav.navigate(AccountRoutes.LOGIN) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = false }
+                                }
+                            }
+                        )
+                    }
+                    composable(
+                        route = OrderRoutes.ORDER_DETAIL,
+                        arguments = listOf(navArgument("orderId") { type = NavType.StringType })
+                    ) { entry ->
+                        val orderId = entry.arguments?.getString("orderId").orEmpty()
+                        OrderDetailScreen(
+                            ordersRepository = ordersRepository,
+                            orderId = orderId,
+                            guestToken = null,
+                            isGuest = false,
+                            locale = locale,
+                            onBack = { accountNav.popBackStack() },
+                            onSessionExpired = {
+                                accountNav.navigate(AccountRoutes.LOGIN) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = false }
+                                }
+                            },
+                            onProfileIncomplete = { accountNav.navigate(AccountRoutes.PROFILE) }
+                        )
+                    }
+                    composable(AccountRoutes.GUEST_TRACK) {
+                        GuestTrackScreen(
+                            ordersRepository = ordersRepository,
+                            onBack = { accountNav.popBackStack() },
+                            onOrderFound = { order, token ->
+                                accountNav.navigate(OrderRoutes.guestOrderDetail(order.id, token))
+                            }
+                        )
+                    }
+                    composable(
+                        route = OrderRoutes.GUEST_ORDER_DETAIL,
+                        arguments = listOf(
+                            navArgument("orderId") { type = NavType.StringType },
+                            navArgument("guestToken") {
+                                type = NavType.StringType
+                                defaultValue = "-"
+                            }
+                        )
+                    ) { entry ->
+                        val orderId = entry.arguments?.getString("orderId").orEmpty()
+                        val token = entry.arguments?.getString("guestToken")?.takeIf { it != "-" }
+                        OrderDetailScreen(
+                            ordersRepository = ordersRepository,
+                            orderId = orderId,
+                            guestToken = token,
+                            isGuest = true,
+                            locale = locale,
+                            onBack = { accountNav.popBackStack() },
+                            onSessionExpired = {
+                                accountNav.navigate(AccountRoutes.LOGIN) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = false }
+                                }
+                            },
+                            onProfileIncomplete = { accountNav.navigate(AccountRoutes.PROFILE) }
+                        )
+                    }
+                    composable(AccountRoutes.LOGIN) {
+                        LoginScreen(
+                            authRepository = authRepository,
+                            onBack = { accountNav.popBackStack() },
+                            onSignUp = {
+                                accountNav.navigate(AccountRoutes.SIGNUP) {
+                                    popUpTo(AccountRoutes.LOGIN) { inclusive = true }
+                                }
+                            },
+                            onForgotPassword = { accountNav.navigate(AccountRoutes.FORGOT_PASSWORD) },
+                            onLoggedIn = {
+                                accountNav.navigate(AccountRoutes.HOME) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
+                    composable(AccountRoutes.SIGNUP) {
+                        SignUpScreen(
+                            authRepository = authRepository,
+                            onBack = { accountNav.popBackStack() },
+                            onSignedUp = {
+                                accountNav.navigate(AccountRoutes.HOME) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                            }
+                        )
+                    }
+                    composable(AccountRoutes.FORGOT_PASSWORD) {
+                        ForgotPasswordScreen(
+                            authRepository = authRepository,
+                            onBack = { accountNav.popBackStack() }
+                        )
+                    }
+                    composable(AccountRoutes.PROFILE) {
+                        ProfileScreen(
+                            authRepository = authRepository,
+                            onBack = { accountNav.popBackStack() },
+                            onSessionExpired = {
+                                accountNav.navigate(AccountRoutes.LOGIN) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = false }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
