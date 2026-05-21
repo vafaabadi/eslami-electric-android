@@ -1,4 +1,4 @@
-﻿# Eslami Electric — Android (customer v1)
+# Eslami Electric — Android (customer v1)
 
 Native **Kotlin + Jetpack Compose** customer app for [Eslami Electric](https://www.eslamielectric.com). Not a TWA.
 
@@ -12,6 +12,14 @@ Native **Kotlin + Jetpack Compose** customer app for [Eslami Electric](https://w
 - **Android Studio** Ladybug (2024.2+) or newer with SDK 34
 - **JDK 17** (Embedded JDK in Android Studio is fine)
 - Running web API for debug (default `http://localhost:3000`) or a deployed staging/production URL
+
+
+## Repository
+
+```bash
+git clone https://github.com/vafaabadi/eslami-electric-android.git
+cd eslami-electric-android
+```
 
 ## Open the project
 
