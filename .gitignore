@@ -1,37 +1,24 @@
-﻿# Built application files
+﻿*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+app/build/
+/captures/
+.externalNativeBuild/
+.cxx/
 *.apk
 *.ap_
 *.aab
 output/
-
-# Gradle
-.gradle/
-build/
-app/build/
-
-# Local SDK path (never commit)
-local.properties
-
-# Android Studio / IntelliJ
-*.iml
-.idea/
-.cxx/
-.externalNativeBuild/
-
-# macOS
-.DS_Store
-
-# Profiling
 *.hprof
-
-# Screenshots from layout inspector
-captures/
-
-# Kotlin
 .kotlin/
 
-# Signing secrets (never commit)
+# Keystore & release artifacts — never commit
 *.jks
 *.keystore
-key.properties
 keystore.properties
+release/
+upload-keystore*
+*.pem

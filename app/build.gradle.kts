@@ -1,7 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
+}
+
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
 android {
@@ -18,6 +26,17 @@ android {
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
     }
 
+    signingConfigs {
+        create("release") {
+            if (keystorePropertiesFile.exists()) {
+                keyAlias = keystoreProperties.getProperty("KEY_ALIAS")
+                keyPassword = keystoreProperties.getProperty("KEY_PASSWORD")
+                storeFile = rootProject.file(keystoreProperties.getProperty("STORE_FILE"))
+                storePassword = keystoreProperties.getProperty("STORE_PASSWORD")
+            }
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField(
@@ -27,7 +46,10 @@ android {
             )
         }
         release {
+            // Minify off for v1: Retrofit + kotlinx.serialization need soak testing with
+            // proguard-rules.pro before enabling. Rules are ready for a later release.
             isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -37,6 +59,11 @@ android {
                 "API_BASE_URL",
                 "\"https://www.eslamielectric.com\""
             )
+            if (keystorePropertiesFile.exists()) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+            // Without keystore.properties: unsigned release AAB/APK (CI smoke tests only).
+            // Play uploads need signing — copy keystore.properties.example and add upload keystore.
         }
     }
 

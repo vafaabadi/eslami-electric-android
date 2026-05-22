@@ -1,18 +1,17 @@
-# Eslami Electric — Android (customer v1)
+﻿# Eslami Electric — Android (customer v1)
 
 Native **Kotlin + Jetpack Compose** customer app for [Eslami Electric](https://www.eslamielectric.com). Not a TWA.
 
 | Topic | Location |
 |--------|----------|
-| HTTP API contract | [`cursor-my-web-app/docs/mobile-api.md`](../cursor-my-web-app/docs/mobile-api.md) |
-| Web backend | [`cursor-my-web-app`](../cursor-my-web-app) (Express + Supabase + Stripe) |
+| HTTP API contract | [mobile-api.md](https://github.com/vafaabadi/EslamiElectric/blob/main/docs/mobile-api.md) (local: [`cursor-my-web-app/docs/mobile-api.md`](../cursor-my-web-app/docs/mobile-api.md)) |
+| Web backend | [EslamiElectric](https://github.com/vafaabadi/EslamiElectric) (local: [`cursor-my-web-app`](../cursor-my-web-app)) |
 
 ## Prerequisites
 
 - **Android Studio** Ladybug (2024.2+) or newer with SDK 34
 - **JDK 17** (Embedded JDK in Android Studio is fine)
 - Running web API for debug (default `http://localhost:3000`) or a deployed staging/production URL
-
 
 ## Repository
 
@@ -93,6 +92,76 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 
 **Do not commit** API keys or Stripe secrets; the app only calls your backend over HTTPS (or HTTP in local debug).
 
+### Physical device testing
+
+| Goal | API base URL |
+|------|----------------|
+| Emulator + local web API | Debug build (default `http://10.0.2.2:3000`) |
+| Physical phone + local web API | Change debug `API_BASE_URL` in `app/build.gradle.kts` to your PC LAN IP, e.g. `http://192.168.1.10:3000` (cleartext allowed in debug via `src/debug/res/xml/network_security_config.xml`) |
+| Physical phone + production | Install a **release** build (`https://www.eslamielectric.com`) — no cleartext |
+
+## Versioning (Play Store)
+
+| Field | Location | Rule |
+|-------|----------|------|
+| `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload (1, 2, 3, …) |
+| `versionName` | same | User-visible semver (e.g. `1.0.0`, `1.0.1`) |
+
+Current: **versionCode 1**, **versionName 1.0.0**.
+
+## Release signing
+
+Secrets stay **local only** — never commit `keystore.properties`, `*.jks`, or `*.keystore`.
+
+1. Copy `keystore.properties.example` → `keystore.properties` (gitignored).
+2. Create an upload keystore (Play App Signing recommended):
+
+```powershell
+.\scripts\create-upload-keystore.ps1
+```
+
+Or manually:
+
+```bat
+mkdir release
+keytool -genkeypair -v -keystore release/upload-keystore.jks -alias upload -keyalg RSA -keysize 2048 -validity 9125 -storetype PKCS12
+```
+
+3. Fill `keystore.properties` with `STORE_FILE`, passwords, and `KEY_ALIAS`.
+4. Build a signed release bundle:
+
+```bat
+gradlew.bat bundleRelease
+```
+
+Output: `app/build/outputs/bundle/release/app-release.aab`
+
+**Without `keystore.properties`:** `bundleRelease` still runs and produces an **unsigned** AAB (useful for CI). Google Play requires a signed upload; use Play App Signing and register your upload key on first upload.
+
+**Minify:** `isMinifyEnabled` is **off** for v1. Retrofit and kotlinx.serialization need validation against `proguard-rules.pro` before turning minify on in a later release.
+
+## Play Console checklist
+
+Use this before promoting beyond internal testing.
+
+| Step | Notes |
+|------|--------|
+| **Developer account** | [Google Play Console](https://play.google.com/console) — one-time **$25** registration |
+| **App signing** | Enable **Play App Signing**; keep upload keystore backup offline |
+| **Privacy policy** | Public URL required. Add `/privacy` on [eslamielectric.com](https://www.eslamielectric.com) if not live yet — link it in Store settings |
+| **Data safety** | Declare: account info (email, profile), order/payment data processed via your backend; payments via **Stripe**; **no data sold** |
+| **Content rating** | Complete IARC questionnaire (shopping / payments) |
+| **Store listing** | Short + full description; **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500 |
+| **Target API** | `targetSdk` / `compileSdk` **34** (adjust when Google raises minimums) |
+| **Internal testing** | Play Console → **Testing → Internal testing** → Create release → upload `app-release.aab` → add tester emails → share opt-in link |
+| **Stripe** | Release build hits production API; ensure backend Stripe **live** keys match production checkout |
+
+### After internal testing
+
+1. Closed / open testing tracks (optional).
+2. Production release → **Countries**, **Pricing** (free app).
+3. Monitor pre-launch report and crash/ANR dashboards.
+
 ## v1 scope (this scaffold)
 
 - Bottom navigation shell: Home, Products, Basket, Account
@@ -118,6 +187,15 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 
 **Not in v1:** Admin APIs.
 
+## Build commands
+
+```bat
+gradlew.bat assembleDebug
+gradlew.bat bundleRelease
+```
+
+Requires **JDK 17** on `JAVA_HOME`. Signed `bundleRelease` needs `keystore.properties` (see [Release signing](#release-signing)).
+
 ## Package layout
 
 ```
@@ -133,13 +211,6 @@ app/src/main/java/com/eslamielectric/android/
   ui/               Compose theme, navigation, placeholder screens
   util/             StripeCheckoutTabs
 ```
-
-## Play Store notes (later)
-
-- Target production `API_BASE_URL` and HTTPS only for release builds
-- Privacy policy URL, account deletion (web supports `/api/account/request-deletion`)
-- Test Stripe **live** vs **test** keys match backend environment
-- Content rating, screenshots (EN + FA), Data safety form
 
 ## Phase 2 — Catalog UI (done)
 
