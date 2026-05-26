@@ -148,13 +148,20 @@ Use this before promoting beyond internal testing.
 |------|--------|
 | **Developer account** | [Google Play Console](https://play.google.com/console) — one-time **$25** registration |
 | **App signing** | Enable **Play App Signing**; keep upload keystore backup offline |
-| **Privacy policy** | Public URL required. Add `/privacy` on [eslamielectric.com](https://www.eslamielectric.com) if not live yet — link it in Store settings |
+| **Privacy policy** | **https://www.eslamielectric.com/en/privacy** (also `/fa/privacy`). Paste this URL in Play Console → App content → Privacy policy |
 | **Data safety** | Declare: account info (email, profile), order/payment data processed via your backend; payments via **Stripe**; **no data sold** |
 | **Content rating** | Complete IARC questionnaire (shopping / payments) |
-| **Store listing** | Short + full description; **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500 |
+| **Store listing** | Short + full description; **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500; app icon **`play-store/icon-512.png`** (512×512 PNG) |
 | **Target API** | `targetSdk` / `compileSdk` **34** (adjust when Google raises minimums) |
 | **Internal testing** | Play Console → **Testing → Internal testing** → Create release → upload `app-release.aab` → add tester emails → share opt-in link |
 | **Stripe** | Release build hits production API; ensure backend Stripe **live** keys match production checkout |
+
+### Play Store assets
+
+| Asset | Path | Notes |
+|-------|------|--------|
+| **App icon (Play Console upload)** | [`play-store/icon-512.png`](play-store/icon-512.png) | **512×512** PNG, 32-bit with alpha. Play Console → **Grow** → **Store presence** → **Main store listing** → **App icon**. |
+| **Canonical source (web)** | [`cursor-my-web-app/public/icons/icon-512.png`](../cursor-my-web-app/public/icons/icon-512.png) | Regenerate with `scripts/generate-pwa-icons.ps1` or export from `public/icons/icon.svg`, then recopy into `play-store/`. |
 
 ### After internal testing
 
