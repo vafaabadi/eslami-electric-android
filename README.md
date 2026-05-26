@@ -151,7 +151,7 @@ Use this before promoting beyond internal testing.
 | **Privacy policy** | **https://www.eslamielectric.com/en/privacy** (also `/fa/privacy`). Paste this URL in Play Console → App content → Privacy policy |
 | **Data safety** | Declare: account info (email, profile), order/payment data processed via your backend; payments via **Stripe**; **no data sold** |
 | **Content rating** | Complete IARC questionnaire (shopping / payments) |
-| **Store listing** | Short + full description; **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500; app icon **`play-store/icon-512.png`** (512×512 PNG) |
+| **Store listing** | Short + full description — copy in [`play-store/store-listing-en.md`](play-store/store-listing-en.md) and [`play-store/store-listing-fa.md`](play-store/store-listing-fa.md); **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500; app icon **`play-store/icon-512.png`** (512×512 PNG) |
 | **Target API** | `targetSdk` / `compileSdk` **34** (adjust when Google raises minimums) |
 | **Internal testing** | Play Console → **Testing → Internal testing** → Create release → upload `app-release.aab` → add tester emails → share opt-in link |
 | **Stripe** | Release build hits production API; ensure backend Stripe **live** keys match production checkout |
