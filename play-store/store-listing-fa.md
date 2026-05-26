@@ -8,7 +8,7 @@ Use **Persian (Iran)** in Play Console → **Main store listing** → add or sel
 فروشگاه لوازم برقی زاهدان — مرور کاتالوگ، سفارش آنلاین و پرداخت امن
 ```
 
-**Character count:** 62
+**Character count:** 67
 
 ## Full description (≤4000 characters)
 

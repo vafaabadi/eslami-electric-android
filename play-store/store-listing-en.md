@@ -8,7 +8,7 @@ Use **English (United States)** or **English (United Kingdom)** in Play Console 
 Electrical supplies in Zahedan — browse, order & pay securely online.
 ```
 
-**Character count:** 66
+**Character count:** 69
 
 ## Full description (≤4000 characters)
 
