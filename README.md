@@ -161,8 +161,7 @@ Use this before promoting beyond internal testing.
 | Asset | Path | Notes |
 |-------|------|--------|
 | **App icon (Play Console upload)** | [`play-store/icon-512.png`](play-store/icon-512.png) | **512×512** PNG, 32-bit with alpha. Play Console → **Grow** → **Store presence** → **Main store listing** → **App icon**. |
-| **Feature graphic** | [`play-store/feature-graphic-1024x500.png`](play-store/feature-graphic-1024x500.png) | **1024×500** PNG. Regenerate: `python scripts/generate-feature-graphic.py` (requires `pip install Pillow`). |
-| **Screenshots (phone + tablet)** | [`play-store/screenshots/`](play-store/screenshots/) | Phone **1080×2400**, 7-inch **1200×1920**, 10-inch **1600×2560** (4 screens each). Regenerate: `python scripts/generate-play-screenshots.py`. Upload mapping in [`play-store/screenshots/README.md`](play-store/screenshots/README.md). Prefer adb captures when an emulator is running. |
+| **Phone screenshots** | [`play-store/screenshots/phone/`](play-store/screenshots/phone/) | **1080×1920** PNG (4 screens). Regenerate mockups: `python scripts/generate-phone-screenshots.py`. Prefer adb captures when an emulator is running; see [`play-store/screenshots/README.md`](play-store/screenshots/README.md). For a non-empty catalog during capture, run `npm start` in `cursor-my-web-app` or use production API. |
 | **Canonical source (web)** | [`cursor-my-web-app/public/icons/icon-512.png`](../cursor-my-web-app/public/icons/icon-512.png) | Regenerate with `scripts/generate-pwa-icons.ps1` or export from `public/icons/icon.svg`, then recopy into `play-store/`. |
 
 ### After internal testing
