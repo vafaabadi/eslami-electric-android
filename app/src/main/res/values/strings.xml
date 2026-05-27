@@ -29,6 +29,8 @@
     <string name="action_save_profile">Save profile</string>
     <string name="action_send_reset_link">Send reset link</string>
     <string name="login_title">Log in</string>
+    <string name="continue_with_google">Continue with Google</string>
+    <string name="auth_or_divider">or</string>
     <string name="signup_title">Create account</string>
     <string name="profile_title">Profile</string>
     <string name="forgot_password_title">Forgot password</string>

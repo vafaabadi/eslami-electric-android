@@ -107,7 +107,21 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 | `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload (1, 2, 3, …) |
 | `versionName` | same | User-visible semver (e.g. `1.0.0`, `1.0.1`) |
 
-Current: **versionCode 1**, **versionName 1.0.0**.
+Current: **versionCode 3**, **versionName 1.0.2**.
+
+## Launch crash debugging
+
+If the app closes immediately on open (internal testing or sideload):
+
+| Source | How to view |
+|--------|-------------|
+| **Play Console** | **Release** → **Testing** (or **Production**) → **Android vitals** → **Crashes & ANRs** — stack traces for builds distributed via Play |
+| **On device** | **Settings → Apps → Eslami Electric → App info** — if the app force-stops in a loop, note **App won't open** / **keeps stopping**; use **adb logcat** while launching for a live stack trace |
+| **Local rebuild** | `gradlew.bat assembleDebug` then install via Android Studio Run; Logcat filter `com.eslamielectric.android` |
+
+**Release builds without Supabase keys:** `SUPABASE_URL` / `SUPABASE_ANON_KEY` in `local.properties` are optional at compile time. When missing, **Continue with Google** is hidden and the app still launches. Add keys only when you need Google sign-in in that build.
+
+**v1.0.2 (versionCode 3):** Hardened startup — empty/invalid Supabase config and encrypted-prefs init failures no longer crash on launch.
 
 ## Release signing
 
@@ -152,7 +166,7 @@ Use this before promoting beyond internal testing.
 | **Data safety** | Declare: account info (email, profile), order/payment data processed via your backend; payments via **Stripe**; **no data sold** |
 | **Content rating** | Complete IARC questionnaire (shopping / payments) |
 | **Store listing** | Short + full description — copy in [`play-store/store-listing-en.md`](play-store/store-listing-en.md) and [`play-store/store-listing-fa.md`](play-store/store-listing-fa.md); **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500; app icon **`play-store/icon-512.png`** (512×512 PNG) |
-| **Target API** | `targetSdk` / `compileSdk` **34** (adjust when Google raises minimums) |
+| **Target API** | `targetSdk` / `compileSdk` **35** (adjust when Google raises minimums) |
 | **Internal testing** | Play Console → **Testing → Internal testing** → Create release → upload `app-release.aab` → add tester emails → share opt-in link |
 | **Stripe** | Release build hits production API; ensure backend Stripe **live** keys match production checkout |
 
@@ -161,6 +175,7 @@ Use this before promoting beyond internal testing.
 | Asset | Path | Notes |
 |-------|------|--------|
 | **App icon (Play Console upload)** | [`play-store/icon-512.png`](play-store/icon-512.png) | **512×512** PNG, 32-bit with alpha. Play Console → **Grow** → **Store presence** → **Main store listing** → **App icon**. |
+| **Phone screenshots** | [`play-store/screenshots/phone/`](play-store/screenshots/phone/) | **1080×1920** PNG (4 screens). Regenerate mockups: `python scripts/generate-phone-screenshots.py`. Prefer adb captures when an emulator is running; see [`play-store/screenshots/README.md`](play-store/screenshots/README.md). For a non-empty catalog during capture, run `npm start` in `cursor-my-web-app` or use production API. |
 | **Canonical source (web)** | [`cursor-my-web-app/public/icons/icon-512.png`](../cursor-my-web-app/public/icons/icon-512.png) | Regenerate with `scripts/generate-pwa-icons.ps1` or export from `public/icons/icon.svg`, then recopy into `play-store/`. |
 
 ### After internal testing
@@ -190,7 +205,7 @@ Use this before promoting beyond internal testing.
 
 **Phase 6 (polish & web parity):** FA/EN locale toggle with RTL; product detail screen; products search + category chips; basket tab badge; pull-to-refresh; guest order deep links; lightweight loading placeholders.
 
-**Phase 3b (later):** Google OAuth, Telegram login, reset-password deep link.
+**Phase 3b:** Google OAuth (Supabase + `POST /api/auth/token`); Telegram not in Android v1.
 
 **Not in v1:** Admin APIs.
 
@@ -213,7 +228,7 @@ app/src/main/java/com/eslamielectric/android/
   ui/components/    ProductCard, CatalogContent, BasketLineRow
   ui/screens/       Home, Products, Basket, Checkout, auth/account screens
   feature/basket/   CheckoutRepository, CheckoutViewModel
-  feature/auth/     AuthRepository, ViewModels
+  feature/auth/     AuthRepository, SupabaseAuthClient, ViewModels
   feature/orders/   OrdersRepository, OrdersViewModels
   ui/               Compose theme, navigation, placeholder screens
   util/             StripeCheckoutTabs
@@ -242,7 +257,59 @@ Physical device: set debug `API_BASE_URL` to your machine LAN IP (e.g. `http://1
 8. **Forgot password:** email only; generic success message from API.
 9. Wrong password / lockout (**423**) / rate limit (**429**) show on the login screen.
 
-**Phase 3b:** Google OAuth, Telegram, in-app reset-password deep link (use web reset link for now).
+**Phase 3b:** Google OAuth on login screen (see below). Telegram not in Android v1. Reset password: use web reset link for now.
+
+## Google sign-in (Supabase OAuth)
+
+Matches the web flow: Supabase `signInWithOAuth` (Google) → Supabase session `access_token` → `POST /api/auth/token` → app JWT in `SessionStore`.
+
+### 1. Local app config
+
+Copy the same Supabase project as `cursor-my-web-app` into `local.properties` (gitignored):
+
+```properties
+SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+SUPABASE_ANON_KEY=your_anon_public_key
+```
+
+Sync/rebuild after editing. Without these keys, the login screen hides **Continue with Google**; the app still launches normally (release CI/Play builds often omit them).
+
+### 2. Supabase Dashboard → Authentication → URL Configuration
+
+Add this **Redirect URL** (exact):
+
+```text
+eslamielectric://auth-callback
+```
+
+Keep existing web URLs (e.g. `https://www.eslamielectric.com/auth-callback.html`, `http://localhost:3000/auth-callback.html`).
+
+**Authentication → Providers → Google:** enabled with the same Google Cloud OAuth client as the web app.
+
+### 3. Android deep link
+
+The app registers `eslamielectric://auth-callback` in `AndroidManifest.xml`. OAuth opens in **Chrome Custom Tabs** (Supabase Auth plugin).
+
+### 4. SHA-1 fingerprints (Google Cloud / optional Android client)
+
+If you add an **Android** OAuth client in [Google Cloud Console](https://console.cloud.google.com/) (APIs & Services → Credentials), register SHA-1 for each signing key:
+
+| Key | Command (project root) |
+|-----|-------------------------|
+| **Debug** | `keytool -list -v -alias androiddebugkey -keystore "%USERPROFILE%\.android\debug.keystore" -storepass android -keypass android` |
+| **Release (upload keystore)** | `keytool -list -v -alias upload -keystore release/upload-keystore.jks` |
+
+Copy the **SHA-1** line from the output into the Android OAuth client. Package name: `com.eslamielectric.android`.
+
+Supabase Google provider typically uses the **Web** client; SHA-1 is still useful for Play Console and any native Google APIs later.
+
+### 5. Test flow
+
+1. `npm start` in `cursor-my-web-app` (emulator API: debug `http://10.0.2.2:3000`).
+2. Rebuild the app with `SUPABASE_*` in `local.properties`.
+3. Account → **Log in** → **Continue with Google** → complete sign-in in Custom Tab → app receives deep link → logged in.
+
+Errors (cancelled OAuth, invalid token, missing config) show on the login screen.
 
 ## Phase 4 — Checkout (done)
 
@@ -289,7 +356,7 @@ Physical device: set debug `API_BASE_URL` to your machine LAN IP (e.g. `http://1
 7. **Pull-to-refresh:** Home, Products, and My orders lists support pull-down refresh.
 8. **Guest order deep link:** Open `https://www.eslamielectric.com/order.html?token=YOUR_TOKEN` or `eslamielectric://order?token=YOUR_TOKEN` on the device → app opens guest order detail.
 
-**Deferred:** Google OAuth, push notifications, full offline cache, Play internal testing track setup.
+**Deferred:** push notifications, full offline cache, Play internal testing track setup.
 
 ## License
 

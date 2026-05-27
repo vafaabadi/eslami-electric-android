@@ -1,6 +1,7 @@
 package com.eslamielectric.android.core.data
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -18,17 +19,7 @@ private val Context.sessionDataStore by preferencesDataStore(name = "eslami_sess
 /** Secure JWT storage (EncryptedSharedPreferences) + locale (DataStore). */
 class SessionStore(private val context: Context) {
 
-    private val masterKey = MasterKey.Builder(context)
-        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-        .build()
-
-    private val securePrefs = EncryptedSharedPreferences.create(
-        context,
-        "eslami_secure_prefs",
-        masterKey,
-        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-    )
+    private val securePrefs: SharedPreferences = createSecurePrefs(context)
 
     private val localeKey = stringPreferencesKey("locale")
     private val localeUserSetKey = stringPreferencesKey("locale_user_set")
@@ -80,5 +71,24 @@ class SessionStore(private val context: Context) {
 
     companion object {
         private const val KEY_TOKEN = "auth_token"
+        private const val SECURE_PREFS_NAME = "eslami_secure_prefs"
+        private const val FALLBACK_PREFS_NAME = "eslami_secure_prefs_fallback"
+
+        private fun createSecurePrefs(context: Context): SharedPreferences {
+            return try {
+                val masterKey = MasterKey.Builder(context)
+                    .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+                    .build()
+                EncryptedSharedPreferences.create(
+                    context,
+                    SECURE_PREFS_NAME,
+                    masterKey,
+                    EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                    EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                )
+            } catch (_: Exception) {
+                context.getSharedPreferences(FALLBACK_PREFS_NAME, Context.MODE_PRIVATE)
+            }
+        }
     }
 }

@@ -16,6 +16,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -177,11 +178,40 @@ fun LoginScreen(
     var email by rememberSaveable { mutableStateOf("") }
     var password by rememberSaveable { mutableStateOf("") }
 
+    LaunchedEffect(state) {
+        if (state is AuthFormState.Success && authRepository.isLoggedIn()) {
+            onLoggedIn()
+        }
+    }
+
     AuthScaffold(
         title = stringResource(R.string.login_title),
         onBack = onBack,
         modifier = modifier
     ) {
+        if (viewModel.isGoogleSignInAvailable) {
+            OutlinedButton(
+                onClick = { viewModel.signInWithGoogle() },
+                enabled = state !is AuthFormState.Loading,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(stringResource(R.string.continue_with_google))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f))
+                Text(
+                    text = stringResource(R.string.auth_or_divider),
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 12.dp)
+                )
+                HorizontalDivider(modifier = Modifier.weight(1f))
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
         OutlinedTextField(
             value = email,
             onValueChange = { email = it; viewModel.clearError() },
