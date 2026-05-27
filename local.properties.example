@@ -1,3 +1,8 @@
 # Copy to local.properties (gitignored). Android Studio can generate this file automatically.
 #
 # sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk
+#
+# Supabase (public anon key) — same project as cursor-my-web-app .env
+# Required for "Continue with Google" on the login screen.
+# SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+# SUPABASE_ANON_KEY=your_anon_public_key

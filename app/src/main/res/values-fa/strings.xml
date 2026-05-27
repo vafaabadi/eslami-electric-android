@@ -29,6 +29,8 @@
     <string name="action_save_profile">ذخیره پروفایل</string>
     <string name="action_send_reset_link">ارسال لینک بازیابی</string>
     <string name="login_title">ورود</string>
+    <string name="continue_with_google">ادامه با گوگل</string>
+    <string name="auth_or_divider">یا</string>
     <string name="signup_title">ایجاد حساب</string>
     <string name="profile_title">پروفایل</string>
     <string name="forgot_password_title">فراموشی رمز</string>

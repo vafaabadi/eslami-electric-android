@@ -12,6 +12,20 @@ if (keystorePropertiesFile.exists()) {
     keystoreProperties.load(keystorePropertiesFile.inputStream())
 }
 
+val localPropertiesFile = rootProject.file("local.properties")
+val localProperties = Properties()
+if (localPropertiesFile.exists()) {
+    localProperties.load(localPropertiesFile.inputStream())
+}
+
+fun buildConfigString(value: String?): String {
+    val escaped = (value ?: "").replace("\\", "\\\\").replace("\"", "\\\"")
+    return "\"$escaped\""
+}
+
+val supabaseUrl = localProperties.getProperty("SUPABASE_URL") ?: ""
+val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
+
 android {
     namespace = "com.eslamielectric.android"
     compileSdk = 34
@@ -24,6 +38,8 @@ android {
         versionName = "1.0.0"
 
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
+        buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
+        buildConfigField("String", "SUPABASE_ANON_KEY", buildConfigString(supabaseAnonKey))
     }
 
     signingConfigs {
@@ -120,6 +136,11 @@ dependencies {
 
     implementation("androidx.browser:browser:1.8.0")
     implementation("io.coil-kt:coil-compose:2.6.0")
+
+    val supabaseBom = platform("io.github.jan-tennert.supabase:bom:2.6.1")
+    implementation(supabaseBom)
+    implementation("io.github.jan-tennert.supabase:gotrue-kt")
+    implementation("io.ktor:ktor-client-android:2.3.12")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

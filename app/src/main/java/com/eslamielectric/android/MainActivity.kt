@@ -29,6 +29,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         deepLinkGuestToken = parseGuestOrderToken(intent)
+        app.authRepository.handleOAuthDeepLink(intent)
         enableEdgeToEdge()
         setContent {
             val locale by app.sessionStore.localeFlow.collectAsState(initial = LocaleHelper.readLocaleSync(this))
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        app.authRepository.handleOAuthDeepLink(intent)
         parseGuestOrderToken(intent)?.let { deepLinkGuestToken = it }
     }
 
