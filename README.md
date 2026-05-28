@@ -272,7 +272,7 @@ SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_ANON_KEY=your_anon_public_key
 ```
 
-Sync/rebuild after editing. Without these keys, the login screen hides **Continue with Google**; the app still launches normally (release CI/Play builds often omit them).
+Sync/rebuild after editing. Without these keys, the login screen hides **Continue with Google**.
 
 ### 2. Supabase Dashboard → Authentication → URL Configuration
 
