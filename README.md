@@ -107,7 +107,21 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 | `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload (1, 2, 3, …) |
 | `versionName` | same | User-visible semver (e.g. `1.0.0`, `1.0.1`) |
 
-Current: **versionCode 1**, **versionName 1.0.0**.
+Current: **versionCode 3**, **versionName 1.0.2**.
+
+## Launch crash debugging
+
+If the app closes immediately on open (internal testing or sideload):
+
+| Source | How to view |
+|--------|-------------|
+| **Play Console** | **Release** → **Testing** (or **Production**) → **Android vitals** → **Crashes & ANRs** — stack traces for builds distributed via Play |
+| **On device** | **Settings → Apps → Eslami Electric → App info** — if the app force-stops in a loop, note **App won't open** / **keeps stopping**; use **adb logcat** while launching for a live stack trace |
+| **Local rebuild** | `gradlew.bat assembleDebug` then install via Android Studio Run; Logcat filter `com.eslamielectric.android` |
+
+**Release builds without Supabase keys:** `SUPABASE_URL` / `SUPABASE_ANON_KEY` in `local.properties` are optional at compile time. When missing, **Continue with Google** is hidden and the app still launches. Add keys only when you need Google sign-in in that build.
+
+**v1.0.2 (versionCode 3):** Hardened startup — empty/invalid Supabase config and encrypted-prefs init failures no longer crash on launch.
 
 ## Release signing
 
@@ -152,7 +166,7 @@ Use this before promoting beyond internal testing.
 | **Data safety** | Declare: account info (email, profile), order/payment data processed via your backend; payments via **Stripe**; **no data sold** |
 | **Content rating** | Complete IARC questionnaire (shopping / payments) |
 | **Store listing** | Short + full description — copy in [`play-store/store-listing-en.md`](play-store/store-listing-en.md) and [`play-store/store-listing-fa.md`](play-store/store-listing-fa.md); **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500; app icon **`play-store/icon-512.png`** (512×512 PNG) |
-| **Target API** | `targetSdk` / `compileSdk` **34** (adjust when Google raises minimums) |
+| **Target API** | `targetSdk` / `compileSdk` **35** (adjust when Google raises minimums) |
 | **Internal testing** | Play Console → **Testing → Internal testing** → Create release → upload `app-release.aab` → add tester emails → share opt-in link |
 | **Stripe** | Release build hits production API; ensure backend Stripe **live** keys match production checkout |
 
@@ -161,7 +175,7 @@ Use this before promoting beyond internal testing.
 | Asset | Path | Notes |
 |-------|------|--------|
 | **App icon (Play Console upload)** | [`play-store/icon-512.png`](play-store/icon-512.png) | **512×512** PNG, 32-bit with alpha. Play Console → **Grow** → **Store presence** → **Main store listing** → **App icon**. |
-| **Feature graphic** | [`play-store/feature-graphic-1024x500.png`](play-store/feature-graphic-1024x500.png) | **1024×500** PNG. Regenerate: `python scripts/generate-feature-graphic.py` (requires `pip install Pillow`). |
+| **Phone screenshots** | [`play-store/screenshots/phone/`](play-store/screenshots/phone/) | **1080×1920** PNG (4 screens). Regenerate mockups: `python scripts/generate-phone-screenshots.py`. Prefer adb captures when an emulator is running; see [`play-store/screenshots/README.md`](play-store/screenshots/README.md). For a non-empty catalog during capture, run `npm start` in `cursor-my-web-app` or use production API. |
 | **Canonical source (web)** | [`cursor-my-web-app/public/icons/icon-512.png`](../cursor-my-web-app/public/icons/icon-512.png) | Regenerate with `scripts/generate-pwa-icons.ps1` or export from `public/icons/icon.svg`, then recopy into `play-store/`. |
 
 ### After internal testing

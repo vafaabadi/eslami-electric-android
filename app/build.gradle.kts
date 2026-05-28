@@ -28,14 +28,14 @@ val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
 
 android {
     namespace = "com.eslamielectric.android"
-    compileSdk = 34
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.eslamielectric.android"
         minSdk = 26
-        targetSdk = 34
-        versionCode = 1
-        versionName = "1.0.0"
+        targetSdk = 35
+        versionCode = 3
+        versionName = "1.0.2"
 
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))

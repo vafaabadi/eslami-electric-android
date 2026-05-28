@@ -20,8 +20,6 @@ object OAuthRedirect {
 class SupabaseAuthClient private constructor(
     private val client: io.github.jan.supabase.SupabaseClient
 ) {
-    val isConfigured: Boolean = true
-
     suspend fun signInWithGoogle() {
         client.auth.signInWith(Google) {
             queryParams["prompt"] = "select_account"
@@ -31,23 +29,37 @@ class SupabaseAuthClient private constructor(
     fun handleOAuthDeepLink(intent: Intent?, onSession: (UserSession) -> Unit): Boolean {
         val data = intent?.data ?: return false
         if (data.scheme != OAuthRedirect.SCHEME || data.host != OAuthRedirect.HOST) return false
-        client.handleDeeplinks(intent) { session -> onSession(session) }
-        return true
+        return try {
+            client.handleDeeplinks(intent) { session -> onSession(session) }
+            true
+        } catch (_: Exception) {
+            false
+        }
     }
 
     companion object {
+        /** Returns null when keys are missing, invalid, or Supabase client init fails. */
         fun fromBuildConfig(): SupabaseAuthClient? {
             val url = BuildConfig.SUPABASE_URL.trim()
             val key = BuildConfig.SUPABASE_ANON_KEY.trim()
             if (url.isBlank() || key.isBlank()) return null
-            val client = createSupabaseClient(url, key) {
-                install(Auth) {
-                    scheme = OAuthRedirect.SCHEME
-                    host = OAuthRedirect.HOST
-                    defaultExternalAuthAction = ExternalAuthAction.CustomTabs()
-                }
+            if (!url.startsWith("http://", ignoreCase = true) &&
+                !url.startsWith("https://", ignoreCase = true)
+            ) {
+                return null
             }
-            return SupabaseAuthClient(client)
+            return try {
+                val client = createSupabaseClient(url, key) {
+                    install(Auth) {
+                        scheme = OAuthRedirect.SCHEME
+                        host = OAuthRedirect.HOST
+                        defaultExternalAuthAction = ExternalAuthAction.CustomTabs()
+                    }
+                }
+                SupabaseAuthClient(client)
+            } catch (_: Exception) {
+                null
+            }
         }
     }
 }

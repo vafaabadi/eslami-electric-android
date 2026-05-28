@@ -29,8 +29,10 @@ sealed class OAuthResult {
 class AuthRepository(
     private val api: ApiService,
     private val sessionStore: SessionStore,
-    private val supabaseAuth: SupabaseAuthClient? = SupabaseAuthClient.fromBuildConfig()
+    supabaseAuth: SupabaseAuthClient? = null
 ) {
+    private val supabaseAuth: SupabaseAuthClient? =
+        supabaseAuth ?: SupabaseAuthClient.fromBuildConfig()
     val isLoggedInFlow: Flow<Boolean> = sessionStore.isLoggedInFlow
     val tokenFlow: Flow<String?> = sessionStore.tokenFlow
 
@@ -94,6 +96,14 @@ class AuthRepository(
     }
 
     fun handleOAuthDeepLink(intent: Intent?) {
+        try {
+            handleOAuthDeepLinkInternal(intent)
+        } catch (_: Exception) {
+            // Never crash the app on malformed or unexpected OAuth callbacks.
+        }
+    }
+
+    private fun handleOAuthDeepLinkInternal(intent: Intent?) {
         val client = supabaseAuth ?: return
         val uri = intent?.data
         if (uri != null && uri.scheme == OAuthRedirect.SCHEME && uri.host == OAuthRedirect.HOST) {
