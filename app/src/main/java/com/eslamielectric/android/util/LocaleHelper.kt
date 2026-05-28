@@ -3,14 +3,12 @@ package com.eslamielectric.android.util
 import android.content.Context
 import android.content.res.Configuration
 import androidx.datastore.preferences.core.stringPreferencesKey
-import androidx.datastore.preferences.preferencesDataStore
+import com.eslamielectric.android.core.data.sessionDataStore
 import com.eslamielectric.android.core.network.CategoryDto
 import com.eslamielectric.android.core.network.ProductDto
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import java.util.Locale
-
-private val Context.sessionDataStore by preferencesDataStore(name = "eslami_session_prefs")
 
 object LocaleHelper {
 
