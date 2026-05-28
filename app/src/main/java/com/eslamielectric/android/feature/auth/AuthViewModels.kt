@@ -24,6 +24,46 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
     private val _state = MutableStateFlow<AuthFormState>(AuthFormState.Idle)
     val state: StateFlow<AuthFormState> = _state.asStateFlow()
 
+    val isGoogleSignInAvailable: Boolean = authRepository.isGoogleSignInAvailable()
+
+    init {
+        viewModelScope.launch {
+            authRepository.oauthResults.collect { result ->
+                when (result) {
+                    OAuthResult.Success -> {
+                        _state.value = AuthFormState.Success
+                    }
+                    is OAuthResult.Error -> {
+                        _state.value = AuthFormState.Error(result.message)
+                    }
+                }
+            }
+        }
+    }
+
+    fun signInWithGoogle() {
+        if (!isGoogleSignInAvailable) {
+            _state.value = AuthFormState.Error(
+                "Google sign-in is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to local.properties."
+            )
+            return
+        }
+        viewModelScope.launch {
+            _state.value = AuthFormState.Loading
+            try {
+                authRepository.startGoogleSignIn()
+                // Browser opens; completion arrives via oauthResults deep link.
+                _state.value = AuthFormState.Idle
+            } catch (e: IllegalStateException) {
+                _state.value = AuthFormState.Error(e.message ?: "Could not start Google sign-in.")
+            } catch (e: Exception) {
+                _state.value = AuthFormState.Error(
+                    e.message ?: "Could not start Google sign-in. Enable Google in Supabase Auth providers."
+                )
+            }
+        }
+    }
+
     fun login(email: String, password: String, onSuccess: () -> Unit) {
         if (email.isBlank() || password.isBlank()) {
             _state.value = AuthFormState.Error("Email and password are required.")

@@ -107,7 +107,21 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 | `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload (1, 2, 3, …) |
 | `versionName` | same | User-visible semver (e.g. `1.0.0`, `1.0.1`) |
 
-Current: **versionCode 1**, **versionName 1.0.0**.
+Current: **versionCode 3**, **versionName 1.0.2**.
+
+## Launch crash debugging
+
+If the app closes immediately on open (internal testing or sideload):
+
+| Source | How to view |
+|--------|-------------|
+| **Play Console** | **Release** → **Testing** (or **Production**) → **Android vitals** → **Crashes & ANRs** — stack traces for builds distributed via Play |
+| **On device** | **Settings → Apps → Eslami Electric → App info** — if the app force-stops in a loop, note **App won't open** / **keeps stopping**; use **adb logcat** while launching for a live stack trace |
+| **Local rebuild** | `gradlew.bat assembleDebug` then install via Android Studio Run; Logcat filter `com.eslamielectric.android` |
+
+**Release builds without Supabase keys:** `SUPABASE_URL` / `SUPABASE_ANON_KEY` in `local.properties` are optional at compile time. When missing, **Continue with Google** is hidden and the app still launches. Add keys only when you need Google sign-in in that build.
+
+**v1.0.2 (versionCode 3):** Hardened startup — empty/invalid Supabase config and encrypted-prefs init failures no longer crash on launch.
 
 ## Release signing
 
@@ -152,7 +166,7 @@ Use this before promoting beyond internal testing.
 | **Data safety** | Declare: account info (email, profile), order/payment data processed via your backend; payments via **Stripe**; **no data sold** |
 | **Content rating** | Complete IARC questionnaire (shopping / payments) |
 | **Store listing** | Short + full description — copy in [`play-store/store-listing-en.md`](play-store/store-listing-en.md) and [`play-store/store-listing-fa.md`](play-store/store-listing-fa.md); **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500; app icon **`play-store/icon-512.png`** (512×512 PNG) |
-| **Target API** | `targetSdk` / `compileSdk` **34** (adjust when Google raises minimums) |
+| **Target API** | `targetSdk` / `compileSdk` **35** (adjust when Google raises minimums) |
 | **Internal testing** | Play Console → **Testing → Internal testing** → Create release → upload `app-release.aab` → add tester emails → share opt-in link |
 | **Stripe** | Release build hits production API; ensure backend Stripe **live** keys match production checkout |
 
