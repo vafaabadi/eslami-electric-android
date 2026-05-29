@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import com.eslamielectric.android.core.network.CheckoutLineItemRequest
 import com.eslamielectric.android.core.network.ProductDto
+import com.eslamielectric.android.util.resolveProductImageUrl
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
@@ -43,7 +44,7 @@ class BasketRepository(private val context: Context) {
                     categoryId = categoryId ?: product.categoryId,
                     name = product.name,
                     nameFa = product.nameFa.ifBlank { null },
-                    imageUrl = product.imageUrl.ifBlank { null },
+                    imageUrl = resolveProductImageUrl(product.imageUrl),
                     price = product.price,
                     quantity = quantity
                 )

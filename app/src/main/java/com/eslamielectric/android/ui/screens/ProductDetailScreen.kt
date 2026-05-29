@@ -46,6 +46,7 @@ import com.eslamielectric.android.util.displayName
 import com.eslamielectric.android.util.formatPriceUsd
 import com.eslamielectric.android.ui.components.CompactQuantityStepper
 import com.eslamielectric.android.util.imageContentDescription
+import com.eslamielectric.android.util.resolveProductImageUrl
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -132,7 +133,7 @@ private fun ProductDetailContent(
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
-        val imageUrl = product.imageUrl.takeIf { it.isNotBlank() }
+        val imageUrl = resolveProductImageUrl(product.imageUrl)
         if (imageUrl != null) {
             AsyncImage(
                 model = imageUrl,

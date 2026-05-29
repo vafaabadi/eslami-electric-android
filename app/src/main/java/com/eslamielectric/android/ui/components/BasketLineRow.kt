@@ -33,6 +33,7 @@ import coil.compose.AsyncImage
 import com.eslamielectric.android.R
 import com.eslamielectric.android.core.data.BasketItem
 import com.eslamielectric.android.util.formatPriceUsd
+import com.eslamielectric.android.util.resolveProductImageUrl
 
 @Composable
 fun BasketLineRow(
@@ -67,7 +68,7 @@ fun BasketLineRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            val imageUrl = item.imageUrl?.takeIf { it.isNotBlank() }
+            val imageUrl = resolveProductImageUrl(item.imageUrl)
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,

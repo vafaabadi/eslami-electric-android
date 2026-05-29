@@ -43,6 +43,7 @@ import com.eslamielectric.android.util.displayCategory
 import com.eslamielectric.android.util.displayName
 import com.eslamielectric.android.util.formatPriceUsd
 import com.eslamielectric.android.util.imageContentDescription
+import com.eslamielectric.android.util.resolveProductImageUrl
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -240,7 +241,7 @@ fun ProductCard(
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            val imageUrl = product.imageUrl.takeIf { it.isNotBlank() }
+            val imageUrl = resolveProductImageUrl(product.imageUrl)
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
