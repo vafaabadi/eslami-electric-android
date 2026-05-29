@@ -66,6 +66,11 @@ fun BasketScreen(
                             basketRepository.updateQuantity(item.id, item.quantity + 1)
                         }
                     },
+                    onSetQuantity = { quantity ->
+                        scope.launch {
+                            basketRepository.updateQuantity(item.id, quantity)
+                        }
+                    },
                     onRemove = {
                         scope.launch { basketRepository.removeItem(item.id) }
                     }

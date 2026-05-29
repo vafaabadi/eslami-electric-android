@@ -95,10 +95,10 @@ fun CompactQuantityStepper(
 }
 
 @Composable
-private fun QuantityEditDialog(
+fun QuantityEditDialog(
     initialQuantity: Int,
-    minQuantity: Int,
-    maxQuantity: Int,
+    minQuantity: Int = MIN_QUANTITY,
+    maxQuantity: Int = MAX_QUANTITY,
     onConfirm: (Int) -> Unit,
     onDismiss: () -> Unit
 ) {

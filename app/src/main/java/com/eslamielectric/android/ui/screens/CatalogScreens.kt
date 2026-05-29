@@ -96,7 +96,8 @@ fun ProductsScreen(
             productsFilter = { products ->
                 filterProducts(products, locale, searchQuery, selectedCategoryId)
             },
-            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+            showQuantityControls = true
         )
     }
 }

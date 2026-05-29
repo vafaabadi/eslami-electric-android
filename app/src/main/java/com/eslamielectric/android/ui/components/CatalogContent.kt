@@ -56,7 +56,8 @@ fun CatalogStateContent(
     contentPadding: PaddingValues = PaddingValues(16.dp),
     productsFilter: (List<ProductDto>) -> List<ProductDto> = { it },
     isRefreshing: Boolean = false,
-    onRefresh: (() -> Unit)? = null
+    onRefresh: (() -> Unit)? = null,
+    showQuantityControls: Boolean = false
 ) {
     val refreshing = isRefreshing || state is CatalogUiState.Loading
     val pullRefreshState = rememberPullRefreshState(
@@ -84,7 +85,8 @@ fun CatalogStateContent(
                         onAddToBasket = onAddToBasket,
                         onProductClick = onProductClick,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = contentPadding
+                        contentPadding = contentPadding,
+                        showQuantityControls = showQuantityControls
                     )
                 }
             }
