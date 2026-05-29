@@ -20,6 +20,10 @@
     <string name="basket_remove">Remove</string>
     <string name="decrease_quantity">Decrease quantity</string>
     <string name="increase_quantity">Increase quantity</string>
+    <string name="quantity_edit_title">Enter quantity</string>
+    <string name="quantity_edit_label">Quantity</string>
+    <string name="quantity_edit_confirm">OK</string>
+    <string name="quantity_edit_cancel">Cancel</string>
     <string name="account_signed_out_hint">Sign in to manage your profile and orders</string>
     <string name="account_welcome">Welcome</string>
     <string name="action_login">Log in</string>

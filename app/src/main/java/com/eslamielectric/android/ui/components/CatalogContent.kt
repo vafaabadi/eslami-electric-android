@@ -25,6 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -46,7 +50,7 @@ fun CatalogStateContent(
     state: CatalogUiState,
     locale: String,
     onRetry: () -> Unit,
-    onAddToBasket: (ProductDto) -> Unit,
+    onAddToBasket: (ProductDto, Int) -> Unit,
     onProductClick: (ProductDto) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(16.dp),
@@ -192,10 +196,11 @@ fun CatalogError(message: String, onRetry: () -> Unit, modifier: Modifier = Modi
 fun ProductGrid(
     products: List<ProductDto>,
     locale: String,
-    onAddToBasket: (ProductDto) -> Unit,
+    onAddToBasket: (ProductDto, Int) -> Unit,
     onProductClick: (ProductDto) -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(16.dp)
+    contentPadding: PaddingValues = PaddingValues(16.dp),
+    showQuantityControls: Boolean = false
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 168.dp),
@@ -208,9 +213,10 @@ fun ProductGrid(
             ProductCard(
                 product = product,
                 locale = locale,
-                onAddToBasket = { onAddToBasket(product) },
+                onAddToBasket = { quantity -> onAddToBasket(product, quantity) },
                 onClick = { onProductClick(product) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                showQuantityControls = showQuantityControls
             )
         }
     }
@@ -220,10 +226,13 @@ fun ProductGrid(
 fun ProductCard(
     product: ProductDto,
     locale: String,
-    onAddToBasket: () -> Unit,
+    onAddToBasket: (Int) -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showQuantityControls: Boolean = false
 ) {
+    var quantity by rememberSaveable(product.id) { mutableIntStateOf(1) }
+
     Card(
         modifier = modifier.clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -271,8 +280,15 @@ fun ProductCard(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 8.dp)
                 )
+                if (showQuantityControls) {
+                    CompactQuantityStepper(
+                        quantity = quantity,
+                        onQuantityChange = { quantity = it },
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
                 Button(
-                    onClick = onAddToBasket,
+                    onClick = { onAddToBasket(if (showQuantityControls) quantity else 1) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)

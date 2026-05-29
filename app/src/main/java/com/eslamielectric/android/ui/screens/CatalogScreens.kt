@@ -89,8 +89,8 @@ fun ProductsScreen(
             onRetry = viewModel::refresh,
             onRefresh = viewModel::refresh,
             isRefreshing = isRefreshing,
-            onAddToBasket = { product ->
-                scope.launch { basketRepository.addProduct(product, product.categoryId) }
+            onAddToBasket = { product, quantity ->
+                scope.launch { basketRepository.addProduct(product, product.categoryId, quantity) }
             },
             onProductClick = onProductClick,
             productsFilter = { products ->
@@ -115,8 +115,8 @@ fun HomeScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isRefreshing by viewModel.isRefreshing.collectAsState()
     val scope = rememberCoroutineScope()
-    val onAdd: (ProductDto) -> Unit = { product ->
-        scope.launch { basketRepository.addProduct(product, product.categoryId) }
+    val onAdd: (ProductDto, Int) -> Unit = { product, quantity ->
+        scope.launch { basketRepository.addProduct(product, product.categoryId, quantity) }
     }
     val refreshing = isRefreshing || uiState is CatalogUiState.Loading
     val pullRefreshState = rememberPullRefreshState(refreshing = refreshing, onRefresh = viewModel::refresh)
@@ -157,7 +157,8 @@ fun HomeScreen(
                             onAddToBasket = onAdd,
                             onProductClick = onProductClick,
                             modifier = Modifier.weight(1f),
-                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp)
+                            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                            showQuantityControls = true
                         )
                     }
                 }
