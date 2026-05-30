@@ -23,7 +23,10 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -41,7 +44,9 @@ import com.eslamielectric.android.util.displayCategory
 import com.eslamielectric.android.util.displayDescription
 import com.eslamielectric.android.util.displayName
 import com.eslamielectric.android.util.formatPriceUsd
+import com.eslamielectric.android.ui.components.CompactQuantityStepper
 import com.eslamielectric.android.util.imageContentDescription
+import com.eslamielectric.android.util.resolveProductImageUrl
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -100,9 +105,9 @@ fun ProductDetailScreen(
                 ProductDetailContent(
                     product = ui.product,
                     locale = locale,
-                    onAddToBasket = {
+                    onAddToBasket = { quantity ->
                         scope.launch {
-                            basketRepository.addProduct(ui.product, ui.product.categoryId)
+                            basketRepository.addProduct(ui.product, ui.product.categoryId, quantity)
                         }
                     },
                     modifier = Modifier
@@ -118,15 +123,17 @@ fun ProductDetailScreen(
 private fun ProductDetailContent(
     product: ProductDto,
     locale: String,
-    onAddToBasket: () -> Unit,
+    onAddToBasket: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var quantity by rememberSaveable { mutableIntStateOf(1) }
+
     Column(
         modifier = modifier
             .verticalScroll(rememberScrollState())
             .padding(bottom = 24.dp)
     ) {
-        val imageUrl = product.imageUrl.takeIf { it.isNotBlank() }
+        val imageUrl = resolveProductImageUrl(product.imageUrl)
         if (imageUrl != null) {
             AsyncImage(
                 model = imageUrl,
@@ -163,11 +170,18 @@ private fun ProductDetailContent(
                     modifier = Modifier.padding(top = 16.dp)
                 )
             }
-            Button(
-                onClick = onAddToBasket,
+            CompactQuantityStepper(
+                quantity = quantity,
+                onQuantityChange = { quantity = it },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 24.dp)
+            )
+            Button(
+                onClick = { onAddToBasket(quantity) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp)
             ) {
                 Text(stringResource(R.string.add_to_basket))
             }

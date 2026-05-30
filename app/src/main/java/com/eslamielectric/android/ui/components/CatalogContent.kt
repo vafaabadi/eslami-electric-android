@@ -25,6 +25,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -39,6 +43,7 @@ import com.eslamielectric.android.util.displayCategory
 import com.eslamielectric.android.util.displayName
 import com.eslamielectric.android.util.formatPriceUsd
 import com.eslamielectric.android.util.imageContentDescription
+import com.eslamielectric.android.util.resolveProductImageUrl
 
 @OptIn(ExperimentalMaterialApi::class)
 @Composable
@@ -46,13 +51,14 @@ fun CatalogStateContent(
     state: CatalogUiState,
     locale: String,
     onRetry: () -> Unit,
-    onAddToBasket: (ProductDto) -> Unit,
+    onAddToBasket: (ProductDto, Int) -> Unit,
     onProductClick: (ProductDto) -> Unit,
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues(16.dp),
     productsFilter: (List<ProductDto>) -> List<ProductDto> = { it },
     isRefreshing: Boolean = false,
-    onRefresh: (() -> Unit)? = null
+    onRefresh: (() -> Unit)? = null,
+    showQuantityControls: Boolean = false
 ) {
     val refreshing = isRefreshing || state is CatalogUiState.Loading
     val pullRefreshState = rememberPullRefreshState(
@@ -80,7 +86,8 @@ fun CatalogStateContent(
                         onAddToBasket = onAddToBasket,
                         onProductClick = onProductClick,
                         modifier = Modifier.fillMaxSize(),
-                        contentPadding = contentPadding
+                        contentPadding = contentPadding,
+                        showQuantityControls = showQuantityControls
                     )
                 }
             }
@@ -192,10 +199,11 @@ fun CatalogError(message: String, onRetry: () -> Unit, modifier: Modifier = Modi
 fun ProductGrid(
     products: List<ProductDto>,
     locale: String,
-    onAddToBasket: (ProductDto) -> Unit,
+    onAddToBasket: (ProductDto, Int) -> Unit,
     onProductClick: (ProductDto) -> Unit,
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues(16.dp)
+    contentPadding: PaddingValues = PaddingValues(16.dp),
+    showQuantityControls: Boolean = false
 ) {
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 168.dp),
@@ -208,9 +216,10 @@ fun ProductGrid(
             ProductCard(
                 product = product,
                 locale = locale,
-                onAddToBasket = { onAddToBasket(product) },
+                onAddToBasket = { quantity -> onAddToBasket(product, quantity) },
                 onClick = { onProductClick(product) },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                showQuantityControls = showQuantityControls
             )
         }
     }
@@ -220,16 +229,19 @@ fun ProductGrid(
 fun ProductCard(
     product: ProductDto,
     locale: String,
-    onAddToBasket: () -> Unit,
+    onAddToBasket: (Int) -> Unit,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    showQuantityControls: Boolean = false
 ) {
+    var quantity by rememberSaveable(product.id) { mutableIntStateOf(1) }
+
     Card(
         modifier = modifier.clickable(onClick = onClick),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Column {
-            val imageUrl = product.imageUrl.takeIf { it.isNotBlank() }
+            val imageUrl = resolveProductImageUrl(product.imageUrl)
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
@@ -271,8 +283,15 @@ fun ProductCard(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(top = 8.dp)
                 )
+                if (showQuantityControls) {
+                    CompactQuantityStepper(
+                        quantity = quantity,
+                        onQuantityChange = { quantity = it },
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
                 Button(
-                    onClick = onAddToBasket,
+                    onClick = { onAddToBasket(if (showQuantityControls) quantity else 1) },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp)

@@ -20,6 +20,10 @@
     <string name="basket_remove">حذف</string>
     <string name="decrease_quantity">کاهش تعداد</string>
     <string name="increase_quantity">افزایش تعداد</string>
+    <string name="quantity_edit_title">وارد کردن تعداد</string>
+    <string name="quantity_edit_label">تعداد</string>
+    <string name="quantity_edit_confirm">تأیید</string>
+    <string name="quantity_edit_cancel">لغو</string>
     <string name="account_signed_out_hint">برای مدیریت پروفایل و سفارش‌ها وارد شوید</string>
     <string name="account_welcome">خوش آمدید</string>
     <string name="action_login">ورود</string>
