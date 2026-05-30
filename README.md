@@ -119,7 +119,15 @@ If the app closes immediately on open (internal testing or sideload):
 | **On device** | **Settings → Apps → Eslami Electric → App info** — if the app force-stops in a loop, note **App won't open** / **keeps stopping**; use **adb logcat** while launching for a live stack trace |
 | **Local rebuild** | `gradlew.bat assembleDebug` then install via Android Studio Run; Logcat filter `com.eslamielectric.android` |
 
-**Release builds without Supabase keys:** `SUPABASE_URL` / `SUPABASE_ANON_KEY` in `local.properties` are optional at compile time. When missing, **Continue with Google** is hidden and the app still launches. Add keys only when you need Google sign-in in that build.
+**Release builds without Supabase keys:** Production `SUPABASE_URL` / `SUPABASE_ANON_KEY` are in committed `gradle.properties` (public anon key, same as the web app). Override in `local.properties` for staging. Play/CI builds get Google sign-in without extra secrets.
+
+**Supabase redirect URL (required for Google):** In Supabase Dashboard → **Authentication** → **URL Configuration** → **Redirect URLs**, add exactly:
+
+```text
+eslamielectric://auth-callback
+```
+
+Without this, Google OAuth opens but returns an error when redirecting back to the app.
 
 **v1.0.2 (versionCode 3):** Hardened startup — empty/invalid Supabase config and encrypted-prefs init failures no longer crash on launch.
 
@@ -265,14 +273,14 @@ Matches the web flow: Supabase `signInWithOAuth` (Google) → Supabase session `
 
 ### 1. Local app config
 
-Copy the same Supabase project as `cursor-my-web-app` into `local.properties` (gitignored):
+Copy the same Supabase project as `cursor-my-web-app` into `local.properties` (gitignored), **or** rely on defaults in `gradle.properties`:
 
 ```properties
 SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_ANON_KEY=your_anon_public_key
 ```
 
-Sync/rebuild after editing. Without these keys, the login screen hides **Continue with Google**; the app still launches normally (release CI/Play builds often omit them).
+`local.properties` overrides `gradle.properties`. Sync/rebuild after editing.
 
 ### 2. Supabase Dashboard → Authentication → URL Configuration
 

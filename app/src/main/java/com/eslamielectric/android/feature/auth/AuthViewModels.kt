@@ -39,12 +39,21 @@ class LoginViewModel(private val authRepository: AuthRepository) : ViewModel() {
                 }
             }
         }
+        // OAuth completes via deep link after Custom Tab closes; token may arrive before oauthResults.
+        viewModelScope.launch {
+            authRepository.isLoggedInFlow.collect { loggedIn ->
+                if (loggedIn && _state.value !is AuthFormState.Success) {
+                    _state.value = AuthFormState.Success
+                }
+            }
+        }
     }
 
     fun signInWithGoogle() {
         if (!isGoogleSignInAvailable) {
             _state.value = AuthFormState.Error(
-                "Google sign-in is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to local.properties."
+                "Google sign-in is not configured. Rebuild with SUPABASE_URL and SUPABASE_ANON_KEY " +
+                    "(local.properties or gradle.properties)."
             )
             return
         }

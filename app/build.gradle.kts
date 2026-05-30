@@ -23,8 +23,16 @@ fun buildConfigString(value: String?): String {
     return "\"$escaped\""
 }
 
-val supabaseUrl = localProperties.getProperty("SUPABASE_URL") ?: ""
-val supabaseAnonKey = localProperties.getProperty("SUPABASE_ANON_KEY") ?: ""
+fun resolveSupabaseProperty(name: String): String {
+    return sequenceOf(
+        localProperties.getProperty(name)?.trim(),
+        (project.findProperty(name) as String?)?.trim(),
+        System.getenv(name)?.trim()
+    ).firstOrNull { !it.isNullOrBlank() }.orEmpty()
+}
+
+val supabaseUrl = resolveSupabaseProperty("SUPABASE_URL")
+val supabaseAnonKey = resolveSupabaseProperty("SUPABASE_ANON_KEY")
 
 android {
     namespace = "com.eslamielectric.android"
@@ -34,8 +42,8 @@ android {
         applicationId = "com.eslamielectric.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 7
-        versionName = "1.0.6"
+        versionCode = 8
+        versionName = "1.0.7"
 
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))

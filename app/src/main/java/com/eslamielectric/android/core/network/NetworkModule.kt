@@ -31,6 +31,12 @@ object NetworkModule {
         val client = OkHttpClient.Builder()
             .addInterceptor(logging)
             .addInterceptor { chain ->
+                val request = chain.request().newBuilder()
+                    .header("User-Agent", "EslamiElectric-Android/${BuildConfig.VERSION_NAME}")
+                    .build()
+                chain.proceed(request)
+            }
+            .addInterceptor { chain ->
                 val token = tokenProvider()
                 val request = if (!token.isNullOrBlank()) {
                     chain.request().newBuilder()
