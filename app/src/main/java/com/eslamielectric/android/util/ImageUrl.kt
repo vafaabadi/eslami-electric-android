@@ -14,12 +14,10 @@ fun resolveProductImageUrl(raw: String?): String? {
     ) {
         return trimmed
     }
-    val base = BuildConfig.API_BASE_URL.trimEnd('/').toHttpUrlOrNull() ?: return trimmed
-    val path = trimmed.trimStart('/')
-    if (path.isEmpty()) return null
-    val builder = base.newBuilder().encodedPath("/")
-    path.split('/').filter { it.isNotEmpty() }.forEach { segment ->
-        builder.addPathSegment(segment)
+    if (trimmed.startsWith("//")) {
+        return "https:$trimmed"
     }
-    return builder.build().toString()
+    val base = BuildConfig.API_BASE_URL.trimEnd('/').toHttpUrlOrNull() ?: return null
+    val link = if (trimmed.startsWith("/")) trimmed else "/$trimmed"
+    return base.resolve(link)?.toString()
 }
