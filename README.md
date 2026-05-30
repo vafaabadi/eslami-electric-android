@@ -280,7 +280,7 @@ SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 SUPABASE_ANON_KEY=your_anon_public_key
 ```
 
-`local.properties` overrides `gradle.properties`. Sync/rebuild after editing.
+Sync/rebuild after editing. Without these keys, the login screen hides **Continue with Google**.
 
 ### 2. Supabase Dashboard → Authentication → URL Configuration
 
