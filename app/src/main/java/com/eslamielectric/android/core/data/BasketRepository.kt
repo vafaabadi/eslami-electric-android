@@ -91,7 +91,9 @@ class BasketRepository(private val context: Context) {
     private fun decode(raw: String?): List<BasketItem> {
         if (raw.isNullOrBlank()) return emptyList()
         return try {
-            json.decodeFromString<List<BasketItem>>(raw)
+            json.decodeFromString<List<BasketItem>>(raw).map { item ->
+                item.copy(imageUrl = resolveProductImageUrl(item.imageUrl))
+            }
         } catch (_: Exception) {
             emptyList()
         }

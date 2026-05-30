@@ -1,6 +1,8 @@
 package com.eslamielectric.android
 
 import android.app.Application
+import coil.ImageLoader
+import coil.ImageLoaderFactory
 import com.eslamielectric.android.core.data.BasketRepository
 import com.eslamielectric.android.core.data.PendingCheckoutStore
 import com.eslamielectric.android.core.data.SessionStore
@@ -13,8 +15,10 @@ import com.eslamielectric.android.feature.orders.OrdersRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import java.util.concurrent.TimeUnit
 
-class EslamiElectricApp : Application() {
+class EslamiElectricApp : Application(), ImageLoaderFactory {
 
     lateinit var sessionStore: SessionStore
         private set
@@ -36,6 +40,24 @@ class EslamiElectricApp : Application() {
 
     lateinit var ordersRepository: OrdersRepository
         private set
+
+    override fun newImageLoader(): ImageLoader {
+        val client = OkHttpClient.Builder()
+            .connectTimeout(30, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .addInterceptor { chain ->
+                chain.proceed(
+                    chain.request().newBuilder()
+                        .header("User-Agent", "EslamiElectric-Android/${BuildConfig.VERSION_NAME}")
+                        .build()
+                )
+            }
+            .build()
+        return ImageLoader.Builder(this)
+            .okHttpClient(client)
+            .crossfade(true)
+            .build()
+    }
 
     override fun onCreate() {
         super.onCreate()
