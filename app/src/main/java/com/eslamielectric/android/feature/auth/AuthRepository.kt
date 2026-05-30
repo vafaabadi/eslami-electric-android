@@ -38,7 +38,7 @@ class AuthRepository(
 
     private val oauthScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
-    private val _oauthResults = MutableSharedFlow<OAuthResult>(extraBufferCapacity = 1)
+    private val _oauthResults = MutableSharedFlow<OAuthResult>(replay = 1, extraBufferCapacity = 1)
     val oauthResults: SharedFlow<OAuthResult> = _oauthResults.asSharedFlow()
 
     fun isGoogleSignInAvailable(): Boolean = supabaseAuth != null
@@ -84,7 +84,10 @@ class AuthRepository(
 
     suspend fun startGoogleSignIn() {
         val client = supabaseAuth
-            ?: throw IllegalStateException("Google sign-in is not configured. Add SUPABASE_URL and SUPABASE_ANON_KEY to local.properties.")
+            ?: throw IllegalStateException(
+                "Google sign-in is not configured. Rebuild with SUPABASE_URL and SUPABASE_ANON_KEY " +
+                    "(local.properties or gradle.properties)."
+            )
         try {
             client.signInWithGoogle()
         } catch (e: Exception) {
@@ -132,7 +135,12 @@ class AuthRepository(
         if (!handled && intent?.data != null) {
             val data = intent.data
             if (data?.scheme == OAuthRedirect.SCHEME && data.host == OAuthRedirect.HOST) {
-                _oauthResults.tryEmit(OAuthResult.Error("Could not complete Google sign-in. Try again."))
+                _oauthResults.tryEmit(
+                    OAuthResult.Error(
+                        "Could not complete Google sign-in. Add eslamielectric://auth-callback to " +
+                            "Supabase Auth redirect URLs, then try again."
+                    )
+                )
             }
         }
     }

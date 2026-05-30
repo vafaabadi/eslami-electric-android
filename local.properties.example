@@ -2,7 +2,8 @@
 #
 # sdk.dir=C\:\\Users\\YOU\\AppData\\Local\\Android\\Sdk
 #
-# Supabase (public anon key) — same project as cursor-my-web-app .env
+# Supabase (public anon key) — same project as cursor-my-web-app .env / gradle.properties
 # Required for "Continue with Google" on the login screen.
+# local.properties overrides gradle.properties when both are set.
 # SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
 # SUPABASE_ANON_KEY=your_anon_public_key

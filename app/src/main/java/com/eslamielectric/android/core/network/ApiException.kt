@@ -1,5 +1,6 @@
 package com.eslamielectric.android.core.network
 
+import com.eslamielectric.android.BuildConfig
 import kotlinx.serialization.json.Json
 import retrofit2.HttpException
 import java.io.IOException
@@ -46,5 +47,9 @@ private fun parseHttpException(e: HttpException): ApiException {
     return ApiException(e.code(), e.message() ?: "Request failed")
 }
 
-private const val NETWORK_HINT =
-    "Could not reach the store. Start the web API (npm start in cursor-my-web-app), then retry."
+private val NETWORK_HINT: String
+    get() = if (BuildConfig.DEBUG) {
+        "Could not reach the store. Start the web API (npm start in cursor-my-web-app), then retry."
+    } else {
+        "Could not reach the store. Check your internet connection and try again."
+    }
