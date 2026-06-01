@@ -32,7 +32,7 @@ cd eslami-electric-android
 If `gradlew.bat` / `gradle-wrapper.jar` are missing, either:
 
 - Let Android Studio generate the wrapper on first sync, or
-- From the project root (with Gradle installed): `gradle wrapper --gradle-version 8.7`
+- From the project root (with Gradle installed): `gradle wrapper --gradle-version 8.13`
 
 Verify from project root (requires **JDK 17** on `JAVA_HOME`):
 
@@ -46,7 +46,7 @@ If Gradle reports Java 8, set `JAVA_HOME` to JDK 17 or adjust `org.gradle.java.h
 
 **Symptoms:** “No matching variant of `com.android.tools.build:gradle:8.5.2`”, Java 11 compatibility warnings, only **Gradle Scripts** visible (no **app** module), Run disabled.
 
-**Cause:** This project uses **Android Gradle Plugin 8.5.2**, which needs **Gradle 8.7+** and **JDK 17**. Android Studio was using an old **Java 8 JRE** (`Android Studio\jre`) instead of **JBR 17**.
+**Cause:** This project uses **Android Gradle Plugin 8.13.x**, which needs **Gradle 8.13+** and **JDK 17**. Android Studio was using an old **Java 8 JRE** (`Android Studio\jre`) instead of **JBR 17**.
 
 **Fix in Android Studio (recommended):**
 
@@ -107,7 +107,7 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 | `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload (1, 2, 3, …) |
 | `versionName` | same | User-visible semver (e.g. `1.0.0`, `1.0.1`) |
 
-Current: **versionCode 3**, **versionName 1.0.2**.
+Current: **versionCode 11**, **versionName 1.0.10**.
 
 ## Launch crash debugging
 
@@ -364,7 +364,58 @@ Errors (cancelled OAuth, invalid token, missing config) show on the login screen
 7. **Pull-to-refresh:** Home, Products, and My orders lists support pull-down refresh.
 8. **Guest order deep link:** Open `https://www.eslamielectric.com/order.html?token=YOUR_TOKEN` or `eslamielectric://order?token=YOUR_TOKEN` on the device → app opens guest order detail.
 
-**Deferred:** push notifications, full offline cache, Play internal testing track setup.
+**Deferred:** push notifications, full offline cache.
+
+## GitHub Actions CI / Play upload
+
+Two workflows live under `.github/workflows/`:
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| `android-ci.yml` | Push to `main`, PRs, manual | `compileReleaseKotlin`, `compileDebugKotlin`, unsigned `bundleRelease` artifact |
+| `play-internal.yml` | Tag `v*` (e.g. `v1.0.10`), manual | Signed `bundleRelease` → Play Console **Internal testing** track |
+
+### Required secrets (Play upload only)
+
+Configure in GitHub → **Settings → Secrets and variables → Actions**:
+
+| Secret | Description |
+|--------|-------------|
+| `ANDROID_KEYSTORE_BASE64` | Base64 of your upload keystore file (`certutil -encode` on Windows, `base64 -w0` on Linux) |
+| `KEYSTORE_PASSWORD` | Keystore store password |
+| `KEY_ALIAS` | Key alias (default `upload` from `scripts/create-upload-keystore.ps1`) |
+| `KEY_PASSWORD` | Key password |
+| `PLAY_SERVICE_ACCOUNT_JSON` | JSON key for a Play Console service account with **Release to testing tracks** permission |
+
+**Never commit** keystore files, `keystore.properties`, or service account JSON.
+
+### Play Console setup (one-time)
+
+1. **Play Console → Setup → API access** → Link a Google Cloud project → Create service account → Grant **Admin** or **Release manager** (must include release to internal testing).
+2. Download JSON key → paste entire contents into `PLAY_SERVICE_ACCOUNT_JSON` secret.
+3. **Testing → Internal testing** → ensure the track exists; first manual upload may be required to register the upload key.
+4. Add tester emails to the internal testing list.
+
+### Trigger a Play upload
+
+Bump `versionCode` / `versionName` in `app/build.gradle.kts`, commit, tag, and push:
+
+```bat
+git tag v1.0.10
+git push origin v1.0.10
+```
+
+Or use **Actions → Play Internal Release → Run workflow**.
+
+### Local build commands
+
+```bat
+gradlew.bat assembleDebug
+gradlew.bat compileReleaseKotlin
+gradlew.bat bundleRelease
+```
+
+Signed local release needs `keystore.properties` (see [Release signing](#release-signing)).
 
 ## License
 

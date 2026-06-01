@@ -42,8 +42,8 @@ android {
         applicationId = "com.eslamielectric.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 10
-        versionName = "1.0.9"
+        versionCode = 11
+        versionName = "1.0.10"
 
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))

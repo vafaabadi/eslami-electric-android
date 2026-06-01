@@ -80,6 +80,13 @@
     <string name="checkout_incomplete_title">پرداخت تکمیل نشد</string>
     <string name="checkout_incomplete_hint">می‌توانید به سبد برگردید و دوباره تلاش کنید.</string>
     <string name="checkout_done">بستن</string>
+    <string name="checkout_track_order">پیگیری این سفارش</string>
+    <string name="checkout_guest_track_hint">شماره سفارش را ذخیره کنید. همچنین می‌توانید هر زمان از لینک ایمیل تأیید سفارش را پیگیری کنید.</string>
+    <string name="products_sort_label">مرتب‌سازی</string>
+    <string name="products_sort_default">پیش‌فرض</string>
+    <string name="products_sort_price_asc">قیمت: کم به زیاد</string>
+    <string name="products_sort_price_desc">قیمت: زیاد به کم</string>
+    <string name="products_sort_name_asc">نام: الفبایی</string>
     <string name="action_my_orders">سفارشات من</string>
     <string name="action_guest_track">پیگیری سفارش مهمان</string>
     <string name="orders_title">سفارشات من</string>

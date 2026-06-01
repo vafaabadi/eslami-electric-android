@@ -291,6 +291,7 @@ fun CheckoutResultScreen(
     order: OrderDto?,
     message: String?,
     onDone: () -> Unit,
+    onTrackOrder: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -322,7 +323,21 @@ fun CheckoutResultScreen(
                 style = MaterialTheme.typography.titleMedium
             )
         }
+        if (success && onTrackOrder != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.checkout_guest_track_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
+        if (success && onTrackOrder != null) {
+            Button(onClick = onTrackOrder, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.checkout_track_order))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
         Button(onClick = onDone, modifier = Modifier.fillMaxWidth()) {
             Text(stringResource(R.string.checkout_done))
         }
