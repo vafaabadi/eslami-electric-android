@@ -108,12 +108,14 @@
     <string name="order_cancel_confirm_yes">لغو سفارش</string>
     <string name="order_cancel_confirm_no">نگه‌داشتن سفارش</string>
     <string name="guest_track_title">پیگیری سفارش مهمان</string>
-    <string name="guest_track_intro">ایمیل و شماره سفارش را از ایمیل تأیید وارد کنید، یا توکن پیگیری را از لینک ایمیل بچسبانید.</string>
+    <string name="guest_track_intro">ایمیل + شماره سفارش (مثلاً ORD-A3X9K2 از رسید) یا لینک پیگیری از ایمیل تأیید — نه شماره سفارش.</string>
     <string name="guest_track_mode_email">ایمیل + شماره سفارش</string>
-    <string name="guest_track_mode_token">توکن پیگیری</string>
+    <string name="guest_track_mode_token">لینک پیگیری</string>
     <string name="guest_track_order_ref">شماره سفارش</string>
-    <string name="guest_track_order_ref_hint">مثال ORD-A3X9K2 یا شناسه UUID</string>
-    <string name="guest_track_token_label">توکن پیگیری</string>
+    <string name="guest_track_order_ref_hint">مثال ORD-A3X9K2</string>
+    <string name="guest_track_token_label">لینک یا توکن پیگیری</string>
+    <string name="guest_track_token_hint">لینک ایمیل را بچسبانید (…/order.html?token=…)</string>
+    <string name="guest_track_token_supporting">شماره سفارش نیست — لینک ایمیل تأیید را استفاده کنید.</string>
     <string name="guest_track_submit">مشاهده سفارش</string>
     <string name="language_label">زبان</string>
     <string name="language_en">English</string>

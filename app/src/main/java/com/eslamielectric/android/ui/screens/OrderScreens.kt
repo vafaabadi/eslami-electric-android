@@ -55,6 +55,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eslamielectric.android.R
 import com.eslamielectric.android.core.network.OrderDto
 import com.eslamielectric.android.core.network.OrderLineItemDto
+import com.eslamielectric.android.feature.orders.GuestOrderInput
 import com.eslamielectric.android.feature.orders.GuestTrackUiState
 import com.eslamielectric.android.feature.orders.GuestTrackViewModel
 import com.eslamielectric.android.feature.orders.OrderActionState
@@ -502,7 +503,11 @@ fun GuestTrackScreen(
                     onValueChange = { trackingToken = it; viewModel.clearError() },
                     label = { Text(stringResource(R.string.guest_track_token_label)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    placeholder = { Text(stringResource(R.string.guest_track_token_hint)) },
+                    supportingText = {
+                        Text(stringResource(R.string.guest_track_token_supporting))
+                    }
                 )
             }
             if (state is GuestTrackUiState.Error) {
@@ -517,8 +522,15 @@ fun GuestTrackScreen(
             Button(
                 onClick = {
                     if (useToken) {
+                        if (viewModel.isOrderNumberNotToken(trackingToken)) {
+                            orderRef = GuestOrderInput.normalizeOrderRef(trackingToken)
+                            trackingToken = ""
+                            useToken = false
+                            viewModel.clearError()
+                            return@Button
+                        }
                         viewModel.lookupByToken(trackingToken) { order ->
-                            onOrderFound(order, trackingToken.trim())
+                            onOrderFound(order, GuestOrderInput.extractTrackingToken(trackingToken))
                         }
                     } else {
                         viewModel.lookupByEmail(email, orderRef) { order ->

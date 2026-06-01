@@ -203,14 +203,15 @@ class GuestTrackViewModel(
     val state: StateFlow<GuestTrackUiState> = _state.asStateFlow()
 
     fun lookupByEmail(email: String, orderIdOrNumber: String, onFound: (OrderDto) -> Unit) {
-        if (email.isBlank() || orderIdOrNumber.isBlank()) {
+        val normalizedOrderRef = GuestOrderInput.normalizeOrderRef(orderIdOrNumber)
+        if (email.isBlank() || normalizedOrderRef.isBlank()) {
             _state.value = GuestTrackUiState.Error("Email and order number are required.")
             return
         }
         viewModelScope.launch {
             _state.value = GuestTrackUiState.Loading
             try {
-                val order = ordersRepository.guestLookup(email, orderIdOrNumber)
+                val order = ordersRepository.guestLookup(email, normalizedOrderRef)
                 _state.value = GuestTrackUiState.Idle
                 onFound(order)
             } catch (e: ApiException) {
@@ -221,15 +222,29 @@ class GuestTrackViewModel(
         }
     }
 
+    /** True when input looks like an order number/UUID rather than a tracking token. */
+    fun isOrderNumberNotToken(raw: String): Boolean =
+        GuestOrderInput.looksLikeOrderNumber(GuestOrderInput.extractTrackingToken(raw))
+
     fun lookupByToken(token: String, onFound: (OrderDto) -> Unit) {
-        if (token.trim().length < 10) {
-            _state.value = GuestTrackUiState.Error("Enter a valid tracking token from your email link.")
+        val parsedToken = GuestOrderInput.extractTrackingToken(token)
+        if (GuestOrderInput.looksLikeOrderNumber(parsedToken)) {
+            _state.value = GuestTrackUiState.Error(
+                "That looks like an order number, not a tracking link token. " +
+                    "Switch to Email + order number and enter the email from your confirmation."
+            )
+            return
+        }
+        if (parsedToken.length < 10) {
+            _state.value = GuestTrackUiState.Error(
+                "Paste the tracking link from your confirmation email (the long token after token=)."
+            )
             return
         }
         viewModelScope.launch {
             _state.value = GuestTrackUiState.Loading
             try {
-                val order = ordersRepository.loadGuestByToken(token)
+                val order = ordersRepository.loadGuestByToken(parsedToken)
                 _state.value = GuestTrackUiState.Idle
                 onFound(order)
             } catch (e: ApiException) {

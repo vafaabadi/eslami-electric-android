@@ -108,12 +108,14 @@
     <string name="order_cancel_confirm_yes">Cancel order</string>
     <string name="order_cancel_confirm_no">Keep order</string>
     <string name="guest_track_title">Track guest order</string>
-    <string name="guest_track_intro">Enter the email and order number from your confirmation, or paste the tracking token from your email link.</string>
+    <string name="guest_track_intro">Use Email + order number (e.g. ORD-A3X9K2 from your receipt) or paste the tracking link from your confirmation email — not the order number.</string>
     <string name="guest_track_mode_email">Email + order number</string>
-    <string name="guest_track_mode_token">Tracking token</string>
+    <string name="guest_track_mode_token">Tracking link</string>
     <string name="guest_track_order_ref">Order number</string>
-    <string name="guest_track_order_ref_hint">e.g. ORD-A3X9K2 or order UUID</string>
-    <string name="guest_track_token_label">Tracking token</string>
+    <string name="guest_track_order_ref_hint">e.g. ORD-A3X9K2</string>
+    <string name="guest_track_token_label">Tracking link or token</string>
+    <string name="guest_track_token_hint">Paste link from email (…/order.html?token=…)</string>
+    <string name="guest_track_token_supporting">Not your order number — use the link from your confirmation email.</string>
     <string name="guest_track_submit">View order</string>
     <string name="language_label">Language</string>
     <string name="language_en">English</string>
