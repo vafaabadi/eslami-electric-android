@@ -225,12 +225,22 @@ fun AppNavHost(
                         }
                     },
                     onPaymentComplete = { order ->
-                        navController.navigate(CheckoutRoutes.result(true, order.orderNumber)) {
+                        order.guestAccessToken?.let { token ->
+                            ordersRepository.cacheGuestOrder(order, token)
+                        }
+                        navController.navigate(
+                            CheckoutRoutes.result(
+                                success = true,
+                                orderNumber = order.orderNumber,
+                                orderId = order.id,
+                                guestToken = order.guestAccessToken
+                            )
+                        ) {
                             popUpTo(CheckoutRoutes.CHECKOUT) { inclusive = true }
                         }
                     },
                     onPaymentIncomplete = {
-                        navController.navigate(CheckoutRoutes.result(false, null)) {
+                        navController.navigate(CheckoutRoutes.result(false, null, null, null)) {
                             popUpTo(CheckoutRoutes.CHECKOUT) { inclusive = true }
                         }
                     }
@@ -240,22 +250,38 @@ fun AppNavHost(
                 route = CheckoutRoutes.RESULT,
                 arguments = listOf(
                     navArgument("success") { type = NavType.BoolType },
-                    navArgument("orderNumber") { type = NavType.StringType }
+                    navArgument("orderNumber") { type = NavType.StringType },
+                    navArgument("orderId") { type = NavType.StringType },
+                    navArgument("guestToken") { type = NavType.StringType }
                 )
             ) { entry ->
                 val success = entry.arguments?.getBoolean("success") ?: false
                 val orderNumber = entry.arguments?.getString("orderNumber")?.takeIf { it != "-" }
+                val orderId = entry.arguments?.getString("orderId")?.takeIf { it != "-" }
+                val guestToken = entry.arguments?.getString("guestToken")?.takeIf { it != "-" }
+                val canTrackGuestOrder = success && !orderId.isNullOrBlank() && !guestToken.isNullOrBlank()
                 CheckoutResultScreen(
                     success = success,
                     order = if (orderNumber != null) {
                         com.eslamielectric.android.core.network.OrderDto(
-                            id = "",
-                            orderNumber = orderNumber
+                            id = orderId.orEmpty(),
+                            orderNumber = orderNumber,
+                            guestAccessToken = guestToken
                         )
                     } else {
                         null
                     },
                     message = null,
+                    onTrackOrder = if (canTrackGuestOrder) {
+                        {
+                            navController.navigate(CatalogRoutes.guestOrderByToken(guestToken!!)) {
+                                popUpTo(CheckoutRoutes.RESULT) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    } else {
+                        null
+                    },
                     onDone = {
                         navController.navigate(AppDestinations.Home.route) {
                             popUpTo(navController.graph.findStartDestination().id) {

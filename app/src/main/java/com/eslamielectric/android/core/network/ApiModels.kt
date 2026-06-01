@@ -180,7 +180,8 @@ data class OrderDto(
     @SerialName("fulfillment_type") val fulfillmentType: String? = null,
     @SerialName("shipping_address") val shippingAddress: JsonObject? = null,
     @SerialName("customer_email") val customerEmail: String? = null,
-    @SerialName("customer_name") val customerName: String? = null
+    @SerialName("customer_name") val customerName: String? = null,
+    @SerialName("guest_access_token") val guestAccessToken: String? = null
 )
 
 @Serializable

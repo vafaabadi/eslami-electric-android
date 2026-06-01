@@ -48,6 +48,13 @@ import kotlinx.coroutines.launch
 
 private const val HOME_FEATURED_COUNT = 6
 
+private enum class ProductSort {
+    DEFAULT,
+    PRICE_ASC,
+    PRICE_DESC,
+    NAME_ASC
+}
+
 @Composable
 fun ProductsScreen(
     catalogRepository: CatalogRepository,
@@ -62,6 +69,7 @@ fun ProductsScreen(
     val scope = rememberCoroutineScope()
     var searchQuery by rememberSaveable { mutableStateOf("") }
     var selectedCategoryId by rememberSaveable { mutableStateOf<String?>(null) }
+    var sortMode by rememberSaveable { mutableStateOf(ProductSort.DEFAULT) }
 
     Column(modifier = modifier.fillMaxSize()) {
         OutlinedTextField(
@@ -83,6 +91,11 @@ fun ProductsScreen(
                 modifier = Modifier.padding(bottom = 4.dp)
             )
         }
+        SortChipRow(
+            sortMode = sortMode,
+            onSortSelected = { sortMode = it },
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         CatalogStateContent(
             state = uiState,
             locale = locale,
@@ -94,7 +107,11 @@ fun ProductsScreen(
             },
             onProductClick = onProductClick,
             productsFilter = { products ->
-                filterProducts(products, locale, searchQuery, selectedCategoryId)
+                sortProducts(
+                    filterProducts(products, locale, searchQuery, selectedCategoryId),
+                    locale,
+                    sortMode
+                )
             },
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 16.dp),
             showQuantityControls = true
@@ -204,6 +221,49 @@ private fun CategoryChipRow(
     }
 }
 
+@Composable
+private fun SortChipRow(
+    sortMode: ProductSort,
+    onSortSelected: (ProductSort) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    LazyRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        item {
+            FilterChip(
+                selected = sortMode == ProductSort.DEFAULT,
+                onClick = { onSortSelected(ProductSort.DEFAULT) },
+                label = { Text(stringResource(R.string.products_sort_default)) }
+            )
+        }
+        item {
+            FilterChip(
+                selected = sortMode == ProductSort.PRICE_ASC,
+                onClick = { onSortSelected(ProductSort.PRICE_ASC) },
+                label = { Text(stringResource(R.string.products_sort_price_asc)) }
+            )
+        }
+        item {
+            FilterChip(
+                selected = sortMode == ProductSort.PRICE_DESC,
+                onClick = { onSortSelected(ProductSort.PRICE_DESC) },
+                label = { Text(stringResource(R.string.products_sort_price_desc)) }
+            )
+        }
+        item {
+            FilterChip(
+                selected = sortMode == ProductSort.NAME_ASC,
+                onClick = { onSortSelected(ProductSort.NAME_ASC) },
+                label = { Text(stringResource(R.string.products_sort_name_asc)) }
+            )
+        }
+    }
+}
+
 private fun filterProducts(
     products: List<ProductDto>,
     locale: String,
@@ -220,4 +280,15 @@ private fun filterProducts(
             product.displayCategory(locale)?.lowercase()?.contains(query) == true
         matchesCategory && matchesSearch
     }
+}
+
+private fun sortProducts(
+    products: List<ProductDto>,
+    locale: String,
+    sortMode: ProductSort
+): List<ProductDto> = when (sortMode) {
+    ProductSort.DEFAULT -> products
+    ProductSort.PRICE_ASC -> products.sortedBy { it.price }
+    ProductSort.PRICE_DESC -> products.sortedByDescending { it.price }
+    ProductSort.NAME_ASC -> products.sortedBy { it.displayName(locale).lowercase() }
 }
