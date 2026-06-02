@@ -1,17 +1,20 @@
-# Signed release AAB → Google Play Internal testing track.
+# Signed release AAB → Google Play Internal testing track (fully automated on internal).
 # Requires repository secrets (Settings → Secrets and variables → Actions):
-#   ANDROID_KEYSTORE_BASE64  — base64-encoded upload keystore (.jks)
-#   KEYSTORE_PASSWORD        — keystore store password
+#   ANDROID_KEYSTORE_BASE64  — base64-encoded upload keystore (.jks), no PEM headers
+#   KEYSTORE_PASSWORD        — keystore store password (STORE_PASSWORD in keystore.properties)
 #   KEY_ALIAS                — key alias (e.g. upload)
-#   KEY_PASSWORD             — key password
+#   KEY_PASSWORD             — key password (KEY_PASSWORD in keystore.properties)
 #   PLAY_SERVICE_ACCOUNT_JSON — Play Console service account JSON (plain text)
 #
-# Trigger: version tag (v*) or manual dispatch.
+# Triggers: every push to main (primary), optional v* tag, or manual dispatch.
+# versionCode: passed as -PversionCode (run_number + offset); not committed per push.
+# One-time Play Console setup still required (store listing, content rating, etc.) — see README.
 
 name: Play Internal Release
 
 on:
   push:
+    branches: [main]
     tags:
       - "v*"
   workflow_dispatch:
@@ -22,6 +25,8 @@ concurrency:
 
 env:
   CI_GRADLE_JVMARGS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+  # Must stay above the highest versionCode already on Play (local default is 11).
+  VERSION_CODE_OFFSET: 100
 
 jobs:
   release:
@@ -56,22 +61,85 @@ jobs:
           java-version: "17"
           cache: gradle
 
-      - name: Decode upload keystore
+      - name: Resolve versionCode for this run
+        id: version
         run: |
+          CODE=$(( ${{ github.run_number }} + ${{ env.VERSION_CODE_OFFSET }} ))
+          echo "code=$CODE" >> "$GITHUB_OUTPUT"
+          echo "Building with versionCode=$CODE (run_number=${{ github.run_number }} + offset=${{ env.VERSION_CODE_OFFSET }})"
+
+      - name: Decode upload keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          set -euo pipefail
           mkdir -p release
-          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release/upload-keystore.jks
+          B64="$(printf '%s' "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]')"
+          if [ -z "$B64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is empty. Encode release/upload-keystore.jks (see README)."
+            exit 1
+          fi
+          if printf '%s' "$B64" | grep -qE '^-----BEGIN'; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 looks like PEM (certutil -encode). Use raw file base64 only."
+            exit 1
+          fi
+          printf '%s' "$B64" | base64 -d > release/upload-keystore.jks
+          SIZE="$(wc -c < release/upload-keystore.jks | tr -d ' ')"
+          if [ "$SIZE" -lt 100 ]; then
+            echo "::error::Decoded keystore is too small (${SIZE} bytes). Re-encode the full .jks file."
+            exit 1
+          fi
+          echo "Decoded upload keystore: ${SIZE} bytes"
 
       - name: Create keystore.properties
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
         run: |
-          cat > keystore.properties <<EOF
-          STORE_FILE=release/upload-keystore.jks
-          STORE_PASSWORD=${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS=${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD=${{ secrets.KEY_PASSWORD }}
-          EOF
+          set -euo pipefail
+          trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          STORE_PASSWORD="$(trim "$KEYSTORE_PASSWORD")"
+          KEY_ALIAS_TRIM="$(trim "$KEY_ALIAS")"
+          KEY_PASSWORD_TRIM="$(trim "$KEY_PASSWORD")"
+          if [ -z "$STORE_PASSWORD" ] || [ -z "$KEY_ALIAS_TRIM" ] || [ -z "$KEY_PASSWORD_TRIM" ]; then
+            echo "::error::KEYSTORE_PASSWORD, KEY_ALIAS, and KEY_PASSWORD must all be set (non-empty after trim)."
+            exit 1
+          fi
+          {
+            echo 'STORE_FILE=release/upload-keystore.jks'
+            printf 'STORE_PASSWORD=%s\n' "$STORE_PASSWORD"
+            printf 'KEY_ALIAS=%s\n' "$KEY_ALIAS_TRIM"
+            printf 'KEY_PASSWORD=%s\n' "$KEY_PASSWORD_TRIM"
+          } > keystore.properties
+          echo "Wrote keystore.properties (passwords not logged)."
+
+      - name: Validate upload keystore
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+        run: |
+          set -euo pipefail
+          trim() { printf '%s' "$1" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//'; }
+          STORE_PASSWORD="$(trim "$KEYSTORE_PASSWORD")"
+          KEY_ALIAS_TRIM="$(trim "$KEY_ALIAS")"
+          KS="release/upload-keystore.jks"
+
+          if keytool -list -keystore "$KS" -storepass "$STORE_PASSWORD" -alias "$KEY_ALIAS_TRIM" >/dev/null 2>&1; then
+            echo "Keystore store password and alias validated."
+            exit 0
+          fi
+
+          echo "::error::Keystore validation failed before Gradle build."
+          echo "Map local keystore.properties → GitHub secrets:"
+          echo "  STORE_PASSWORD  → KEYSTORE_PASSWORD"
+          echo "  KEY_ALIAS       → KEY_ALIAS"
+          echo "  KEY_PASSWORD    → KEY_PASSWORD"
+          echo "  (upload .jks)   → ANDROID_KEYSTORE_BASE64"
+          exit 1
 
       - name: Build signed release AAB
-        run: ./gradlew bundleRelease --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
+        run: ./gradlew bundleRelease --no-daemon -PversionCode=${{ steps.version.outputs.code }} -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
@@ -88,3 +156,5 @@ jobs:
           releaseFiles: app/build/outputs/bundle/release/app-release.aab
           track: internal
           status: completed
+          # Avoids manual "Send for review" on internal when Play has pending/rejected edits.
+          changesNotSentForReview: true

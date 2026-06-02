@@ -34,6 +34,9 @@ fun resolveSupabaseProperty(name: String): String {
 val supabaseUrl = resolveSupabaseProperty("SUPABASE_URL")
 val supabaseAnonKey = resolveSupabaseProperty("SUPABASE_ANON_KEY")
 
+// CI passes -PversionCode=… (play-internal.yml); local builds use default below.
+val versionCodeOverride = (project.findProperty("versionCode") as String?)?.toIntOrNull()
+
 android {
     namespace = "com.eslamielectric.android"
     compileSdk = 35
@@ -42,7 +45,7 @@ android {
         applicationId = "com.eslamielectric.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
+        versionCode = versionCodeOverride ?: 11
         versionName = "1.0.10"
 
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")

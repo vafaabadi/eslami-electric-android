@@ -1,4 +1,4 @@
-# Compile and assemble on every push to main (no signing secrets required).
+# Compile on push to main and PRs (no signing secrets). Signed release + Play upload: play-internal.yml on main.
 name: Android CI
 
 on:
@@ -53,10 +53,13 @@ jobs:
       - name: Compile debug Kotlin
         run: ./gradlew compileDebugKotlin --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
 
+      # Skip unsigned bundle on main — play-internal.yml builds signed AAB and uploads to Play.
       - name: Build unsigned release AAB
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         run: ./gradlew bundleRelease --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
 
       - name: Upload unsigned AAB artifact
+        if: github.event_name != 'push' || github.ref != 'refs/heads/main'
         uses: actions/upload-artifact@v4
         with:
           name: app-release-unsigned
