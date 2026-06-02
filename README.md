@@ -405,30 +405,78 @@ Configure in GitHub → **Settings → Secrets and variables → Actions**:
 
 | Secret | Description |
 |--------|-------------|
-| `ANDROID_KEYSTORE_BASE64` | Base64 of your upload keystore file (`certutil -encode` on Windows, `base64 -w0` on Linux) |
-| `KEYSTORE_PASSWORD` | Keystore store password |
-| `KEY_ALIAS` | Key alias (default `upload` from `scripts/create-upload-keystore.ps1`) |
-| `KEY_PASSWORD` | Key password |
-| `PLAY_SERVICE_ACCOUNT_JSON` | Full service account JSON key (see below) |
+| `ANDROID_KEYSTORE_BASE64` | **Raw** base64 of `release/upload-keystore.jks` (no PEM headers — see troubleshooting) |
+| `KEYSTORE_PASSWORD` | Same value as `STORE_PASSWORD` in local `keystore.properties` |
+| `KEY_ALIAS` | Same value as `KEY_ALIAS` in local `keystore.properties` (default `upload`) |
+| `KEY_PASSWORD` | Same value as `KEY_PASSWORD` in local `keystore.properties` |
+| `PLAY_SERVICE_ACCOUNT_JSON` | JSON key for a Play Console service account with **Release to testing tracks** permission |
 
 **Never commit** keystore files, `keystore.properties`, or service account JSON.
 
-#### Creating `PLAY_SERVICE_ACCOUNT_JSON`
+### Signing secrets troubleshooting
 
-1. **Google Cloud Console** → **IAM & Admin** → **Service Accounts** → select (or create) the account linked from Play Console **Setup → API access**.
-2. **Keys** → **Add key** → **Create new key** → **JSON** → download the `.json` file.
-3. Open the downloaded file in a text editor. It must:
-   - Start with `{` on the first line
-   - Contain `"type": "service_account"`
-   - Include `client_email`, `private_key`, `project_id`, and related fields — paste the **entire file**, not just the private key
-4. GitHub → **Settings → Secrets and variables → Actions** → **New repository secret**:
-   - Name: `PLAY_SERVICE_ACCOUNT_JSON`
-   - Value: paste the **complete** JSON file contents (plain text, **not** base64-encoded, **not** truncated)
-5. **Play Console → Setup → API access**: invite the service account email under **Users and permissions** with rights to **Release apps to testing tracks** (or Admin).
+If **Play Internal Release** fails at `signReleaseBundle` with `keystore password was incorrect`, or the workflow **Validate upload keystore** step fails first, fix GitHub secrets — do not change app code.
 
-If CI fails with `Exponent part is missing a number in JSON` or `not valid JSON`, delete the secret, re-download a fresh key from GCP, and recreate the secret with the full file. Partial keys, PEM blocks, or base64-wrapped JSON cause this error.
+#### Secret names ↔ local `keystore.properties`
 
-### Test automated internal release
+| Local property | GitHub Actions secret | What it is |
+|----------------|----------------------|------------|
+| `STORE_PASSWORD` | `KEYSTORE_PASSWORD` | **Keystore** (store) password — *not* the key password unless you set them equal |
+| `KEY_ALIAS` | `KEY_ALIAS` | Alias string (e.g. `upload` from `scripts/create-upload-keystore.ps1`) |
+| `KEY_PASSWORD` | `KEY_PASSWORD` | Private key password inside the keystore |
+| *(file)* `release/upload-keystore.jks` | `ANDROID_KEYSTORE_BASE64` | Binary `.jks` encoded as one continuous base64 string |
+
+**Do not swap** `KEYSTORE_PASSWORD` and `KEY_PASSWORD` unless your local `keystore.properties` also uses the same value for both (common when you pressed Enter for the same password twice in `keytool`).
+
+#### Encode the keystore on Windows (PowerShell)
+
+From the project root, with the same `.jks` you use in `STORE_FILE`:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("release/upload-keystore.jks"))
+```
+
+Copy the **single line** output into the `ANDROID_KEYSTORE_BASE64` secret. Do **not** use `certutil -encode` — that adds `-----BEGIN CERTIFICATE-----` headers and breaks CI.
+
+Optional: strip whitespace when pasting (CI also strips spaces/newlines).
+
+#### Verify locally before pushing a tag
+
+```bat
+gradlew.bat bundleRelease
+```
+
+With `keystore.properties` filled from `keystore.properties.example`, this must produce a signed `app/build/outputs/bundle/release/app-release.aab`. If local signing works but CI fails, secrets do not match local files — re-copy values from `keystore.properties` and re-encode the **same** `release/upload-keystore.jks`.
+
+Check alias and store password without printing passwords:
+
+```bat
+keytool -list -v -keystore release/upload-keystore.jks -alias upload
+```
+
+(Use your real alias instead of `upload` if different.)
+
+#### Re-save GitHub secrets
+
+1. Open local `keystore.properties` (never commit it).
+2. Settings → Secrets and variables → Actions → update each secret; avoid trailing spaces when pasting.
+3. Re-run **Actions → Play Internal Release → Run workflow** or push a new `v*` tag.
+
+### Play Console setup (one-time)
+
+1. **Play Console → Setup → API access** → Link a Google Cloud project → Create service account → Grant **Admin** or **Release manager** (must include release to internal testing).
+2. Download JSON key → paste entire contents into `PLAY_SERVICE_ACCOUNT_JSON` secret.
+3. **Testing → Internal testing** → ensure the track exists; first manual upload may be required to register the upload key.
+4. Add tester emails to the internal testing list.
+
+### Trigger a Play upload
+
+Bump `versionCode` / `versionName` in `app/build.gradle.kts`, commit, tag, and push:
+
+```bat
+git tag v1.0.10
+git push origin v1.0.10
+```
 
 1. Merge to `main` with secrets configured.
 2. Push any commit to `main` (or re-run **Play Internal Release**).
