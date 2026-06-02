@@ -109,7 +109,7 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 
 **Local / manual builds:** default **versionCode 11**, **versionName 1.0.10** (bump in `build.gradle.kts` when uploading by hand).
 
-**CI (main):** `play-internal.yml` sets `-PversionCode` = `github.run_number + VERSION_CODE_OFFSET` (default offset **100**; no per-push commit). Raise `VERSION_CODE_OFFSET` in the workflow if Play already has a higher code.
+**CI (main):** `play-internal.yml` passes `-PversionCode` = `github.run_number + 100` (no per-push commit). Raise the `100` offset in the workflow if Play already has a higher code.
 
 ## Launch crash debugging
 
@@ -374,7 +374,7 @@ Two workflows live under `.github/workflows/`:
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `android-ci.yml` | Push to `main`, PRs, manual | `compileReleaseKotlin`, `compileDebugKotlin` (no signing secrets) |
+| `android-ci.yml` | Push to `main`, PRs, manual | `compileReleaseKotlin`, `compileDebugKotlin`; unsigned `bundleRelease` on **PRs only** (skipped on main) |
 | `play-internal.yml` | **Every push to `main`**, tag `v*`, manual | Signed `bundleRelease` → Play **Internal testing** (`status: completed`) |
 
 ### Fully automated (after one-time setup)
@@ -418,7 +418,7 @@ Configure in GitHub → **Settings → Secrets and variables → Actions**:
 1. Merge to `main` with secrets configured.
 2. Push any commit to `main` (or re-run **Play Internal Release**).
 3. **Actions** → **Play Internal Release** succeeds.
-4. **Play Console → Testing → Internal testing** shows a new release (`versionCode` ≈ `run_number + 100` from workflow offset).
+4. **Play Console → Testing → Internal testing** shows a new release (`versionCode` ≈ `run_number + 100`).
 5. Testers use the internal opt-in link to install/update.
 
 ### Local build commands
