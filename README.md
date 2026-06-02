@@ -381,13 +381,62 @@ Configure in GitHub → **Settings → Secrets and variables → Actions**:
 
 | Secret | Description |
 |--------|-------------|
-| `ANDROID_KEYSTORE_BASE64` | Base64 of your upload keystore file (`certutil -encode` on Windows, `base64 -w0` on Linux) |
-| `KEYSTORE_PASSWORD` | Keystore store password |
-| `KEY_ALIAS` | Key alias (default `upload` from `scripts/create-upload-keystore.ps1`) |
-| `KEY_PASSWORD` | Key password |
+| `ANDROID_KEYSTORE_BASE64` | **Raw** base64 of `release/upload-keystore.jks` (no PEM headers — see troubleshooting) |
+| `KEYSTORE_PASSWORD` | Same value as `STORE_PASSWORD` in local `keystore.properties` |
+| `KEY_ALIAS` | Same value as `KEY_ALIAS` in local `keystore.properties` (default `upload`) |
+| `KEY_PASSWORD` | Same value as `KEY_PASSWORD` in local `keystore.properties` |
 | `PLAY_SERVICE_ACCOUNT_JSON` | JSON key for a Play Console service account with **Release to testing tracks** permission |
 
 **Never commit** keystore files, `keystore.properties`, or service account JSON.
+
+### Signing secrets troubleshooting
+
+If **Play Internal Release** fails at `signReleaseBundle` with `keystore password was incorrect`, or the workflow **Validate upload keystore** step fails first, fix GitHub secrets — do not change app code.
+
+#### Secret names ↔ local `keystore.properties`
+
+| Local property | GitHub Actions secret | What it is |
+|----------------|----------------------|------------|
+| `STORE_PASSWORD` | `KEYSTORE_PASSWORD` | **Keystore** (store) password — *not* the key password unless you set them equal |
+| `KEY_ALIAS` | `KEY_ALIAS` | Alias string (e.g. `upload` from `scripts/create-upload-keystore.ps1`) |
+| `KEY_PASSWORD` | `KEY_PASSWORD` | Private key password inside the keystore |
+| *(file)* `release/upload-keystore.jks` | `ANDROID_KEYSTORE_BASE64` | Binary `.jks` encoded as one continuous base64 string |
+
+**Do not swap** `KEYSTORE_PASSWORD` and `KEY_PASSWORD` unless your local `keystore.properties` also uses the same value for both (common when you pressed Enter for the same password twice in `keytool`).
+
+#### Encode the keystore on Windows (PowerShell)
+
+From the project root, with the same `.jks` you use in `STORE_FILE`:
+
+```powershell
+[Convert]::ToBase64String([IO.File]::ReadAllBytes("release/upload-keystore.jks"))
+```
+
+Copy the **single line** output into the `ANDROID_KEYSTORE_BASE64` secret. Do **not** use `certutil -encode` — that adds `-----BEGIN CERTIFICATE-----` headers and breaks CI.
+
+Optional: strip whitespace when pasting (CI also strips spaces/newlines).
+
+#### Verify locally before pushing a tag
+
+```bat
+gradlew.bat bundleRelease
+```
+
+With `keystore.properties` filled from `keystore.properties.example`, this must produce a signed `app/build/outputs/bundle/release/app-release.aab`. If local signing works but CI fails, secrets do not match local files — re-copy values from `keystore.properties` and re-encode the **same** `release/upload-keystore.jks`.
+
+Check alias and store password without printing passwords:
+
+```bat
+keytool -list -v -keystore release/upload-keystore.jks -alias upload
+```
+
+(Use your real alias instead of `upload` if different.)
+
+#### Re-save GitHub secrets
+
+1. Open local `keystore.properties` (never commit it).
+2. Settings → Secrets and variables → Actions → update each secret; avoid trailing spaces when pasting.
+3. Re-run **Actions → Play Internal Release → Run workflow** or push a new `v*` tag.
 
 ### Play Console setup (one-time)
 
