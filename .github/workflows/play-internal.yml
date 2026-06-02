@@ -20,18 +20,34 @@ concurrency:
   group: play-internal-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  CI_GRADLE_JVMARGS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+
 jobs:
   release:
     name: Build signed AAB and upload
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
-      GRADLE_OPTS: "-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError"
-      ORG_GRADLE_PROJECT_org.gradle.jvmargs: "-Xmx4g -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError -Dfile.encoding=UTF-8"
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=${{ env.CI_GRADLE_JVMARGS }}"
+      ORG_GRADLE_PROJECT_org_gradle_jvmargs: ${{ env.CI_GRADLE_JVMARGS }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Prepare Gradle for CI
+        run: |
+          chmod +x gradlew
+          sed -i '/^org.gradle.java.home=/d' gradle.properties
+          sed -i '/^java.home=/d' gradle/gradle-jvm.properties 2>/dev/null || true
+          if grep -q '^org.gradle.jvmargs=' gradle.properties; then
+            sed -i "s|^org.gradle.jvmargs=.*|org.gradle.jvmargs=${CI_GRADLE_JVMARGS}|" gradle.properties
+          else
+            echo "org.gradle.jvmargs=${CI_GRADLE_JVMARGS}" >> gradle.properties
+          fi
+          echo "Effective gradle.properties JVM settings:"
+          grep org.gradle.jvmargs gradle.properties
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -39,11 +55,6 @@ jobs:
           distribution: temurin
           java-version: "17"
           cache: gradle
-
-      - name: Prepare Gradle for CI
-        run: |
-          chmod +x gradlew
-          sed -i '/^org.gradle.java.home=/d' gradle.properties
 
       - name: Decode upload keystore
         run: |
@@ -60,7 +71,7 @@ jobs:
           EOF
 
       - name: Build signed release AAB
-        run: ./gradlew bundleRelease --no-daemon
+        run: ./gradlew bundleRelease --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
 
       - name: Upload AAB artifact
         uses: actions/upload-artifact@v4
