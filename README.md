@@ -409,9 +409,24 @@ Configure in GitHub → **Settings → Secrets and variables → Actions**:
 | `KEYSTORE_PASSWORD` | Keystore store password |
 | `KEY_ALIAS` | Key alias (default `upload` from `scripts/create-upload-keystore.ps1`) |
 | `KEY_PASSWORD` | Key password |
-| `PLAY_SERVICE_ACCOUNT_JSON` | JSON key for a Play Console service account with **Release to testing tracks** permission |
+| `PLAY_SERVICE_ACCOUNT_JSON` | Full service account JSON key (see below) |
 
 **Never commit** keystore files, `keystore.properties`, or service account JSON.
+
+#### Creating `PLAY_SERVICE_ACCOUNT_JSON`
+
+1. **Google Cloud Console** → **IAM & Admin** → **Service Accounts** → select (or create) the account linked from Play Console **Setup → API access**.
+2. **Keys** → **Add key** → **Create new key** → **JSON** → download the `.json` file.
+3. Open the downloaded file in a text editor. It must:
+   - Start with `{` on the first line
+   - Contain `"type": "service_account"`
+   - Include `client_email`, `private_key`, `project_id`, and related fields — paste the **entire file**, not just the private key
+4. GitHub → **Settings → Secrets and variables → Actions** → **New repository secret**:
+   - Name: `PLAY_SERVICE_ACCOUNT_JSON`
+   - Value: paste the **complete** JSON file contents (plain text, **not** base64-encoded, **not** truncated)
+5. **Play Console → Setup → API access**: invite the service account email under **Users and permissions** with rights to **Release apps to testing tracks** (or Admin).
+
+If CI fails with `Exponent part is missing a number in JSON` or `not valid JSON`, delete the secret, re-download a fresh key from GCP, and recreate the secret with the full file. Partial keys, PEM blocks, or base64-wrapped JSON cause this error.
 
 ### Test automated internal release
 
