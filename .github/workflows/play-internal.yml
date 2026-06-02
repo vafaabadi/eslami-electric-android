@@ -38,7 +38,9 @@ jobs:
           cache: gradle
 
       - name: Prepare Gradle for CI
-        run: sed -i '/^org.gradle.java.home=/d' gradle.properties
+        run: |
+          chmod +x gradlew
+          sed -i '/^org.gradle.java.home=/d' gradle.properties
 
       - name: Decode upload keystore
         run: |
