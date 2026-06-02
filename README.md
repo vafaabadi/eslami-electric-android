@@ -104,10 +104,12 @@ Override release/staging in `app/build.gradle.kts` or add product flavors. Physi
 
 | Field | Location | Rule |
 |-------|----------|------|
-| `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload (1, 2, 3, …) |
+| `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload |
 | `versionName` | same | User-visible semver (e.g. `1.0.0`, `1.0.1`) |
 
-Current: **versionCode 11**, **versionName 1.0.10**.
+**Local / manual builds:** default **versionCode 11**, **versionName 1.0.10** (bump in `build.gradle.kts` when uploading by hand).
+
+**CI (main):** `play-internal.yml` passes `-PversionCode` = `github.run_number + 100` (no per-push commit). Raise the `100` offset in the workflow if Play already has a higher code.
 
 ## Launch crash debugging
 
@@ -372,10 +374,32 @@ Two workflows live under `.github/workflows/`:
 
 | Workflow | Trigger | Purpose |
 |----------|---------|---------|
-| `android-ci.yml` | Push to `main`, PRs, manual | `compileReleaseKotlin`, `compileDebugKotlin`, unsigned `bundleRelease` artifact |
-| `play-internal.yml` | Tag `v*` (e.g. `v1.0.10`), manual | Signed `bundleRelease` → Play Console **Internal testing** track |
+| `android-ci.yml` | Push to `main`, PRs, manual | `compileReleaseKotlin`, `compileDebugKotlin`; unsigned `bundleRelease` on **PRs only** (skipped on main) |
+| `play-internal.yml` | **Every push to `main`**, tag `v*`, manual | Signed `bundleRelease` → Play **Internal testing** (`status: completed`) |
 
-### Required secrets (Play upload only)
+### Fully automated (after one-time setup)
+
+- Each **push to `main`**: signed AAB, auto-incrementing `versionCode`, upload to **Internal testing** without manual “Review release” in typical internal-track flows.
+- Optional: `v*` tag push or **Actions → Play Internal Release → Run workflow**.
+- Bump **`versionName`** in `app/build.gradle.kts` when you want a new user-visible label on Play (optional per push).
+
+### One-time Play Console setup (manual)
+
+| Step | Notes |
+|------|--------|
+| Developer account | Play Console registration |
+| Create app | Package `com.eslamielectric.android` |
+| Play App Signing | Enable; register upload key on first upload |
+| Store listing | Descriptions, screenshots, icon — [checklist](#play-console-checklist) |
+| Privacy policy, data safety, content rating | App content |
+| Countries / pricing | Required for distribution |
+| API access | **Setup → API access** → service account with **Release to testing tracks** |
+| Internal testing | Create track; add tester emails |
+| GitHub secrets | Table below |
+
+Ongoing **main** pushes do not require manual AAB upload. If CI fails on `changesNotSentForReview`, clear any **rejected** edit in Play Console or adjust the flag in `play-internal.yml` per [upload-google-play](https://github.com/r0adkll/upload-google-play).
+
+### Required GitHub secrets (Play upload)
 
 Configure in GitHub → **Settings → Secrets and variables → Actions**:
 
@@ -454,7 +478,11 @@ git tag v1.0.10
 git push origin v1.0.10
 ```
 
-Or use **Actions → Play Internal Release → Run workflow**.
+1. Merge to `main` with secrets configured.
+2. Push any commit to `main` (or re-run **Play Internal Release**).
+3. **Actions** → **Play Internal Release** succeeds.
+4. **Play Console → Testing → Internal testing** shows a new release (`versionCode` ≈ `run_number + 100`).
+5. Testers use the internal opt-in link to install/update.
 
 ### Local build commands
 
