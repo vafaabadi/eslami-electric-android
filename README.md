@@ -397,7 +397,7 @@ Two workflows live under `.github/workflows/`:
 | Internal testing | Create track; add tester emails |
 | GitHub secrets | Table below |
 
-Ongoing **main** pushes do not require manual AAB upload. If CI fails on `changesNotSentForReview`, clear any **rejected** edit in Play Console or adjust the flag in `play-internal.yml` per [upload-google-play](https://github.com/r0adkll/upload-google-play).
+Ongoing **main** pushes do not require manual AAB upload. Play accounts that send changes for review automatically must not set `changesNotSentForReview` in `play-internal.yml` (see [upload-google-play](https://github.com/r0adkll/upload-google-play)). If upload fails for other reasons, clear any **rejected** edit in Play Console.
 
 ### Required GitHub secrets (Play upload)
 
