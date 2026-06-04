@@ -130,4 +130,29 @@
     <string name="products_search_hint">جستجوی محصولات…</string>
     <string name="products_all_categories">همه</string>
     <string name="product_detail_title">جزئیات محصول</string>
+
+    <!-- اعلان‌ها -->
+    <string name="notif_channel_orders_name">به‌روزرسانی سفارش</string>
+    <string name="notif_channel_orders_desc">پرداخت، ارسال، تحویل، لغو سفارش و هشدارهای پرداخت.</string>
+    <string name="notif_channel_promotions_name">پیشنهادها و تخفیف‌ها</string>
+    <string name="notif_channel_promotions_desc">تخفیف‌ها، موجودی مجدد و پیشنهادهای فصلی.</string>
+    <string name="notif_channel_account_name">حساب</string>
+    <string name="notif_channel_account_desc">هشدارهای امنیتی و تغییرات مهم حساب.</string>
+    <string name="notif_channel_general_name">عمومی</string>
+    <string name="notif_channel_general_desc">اطلاعیه‌های عمومی و سایر پیام‌ها.</string>
+
+    <string name="notifications_settings_title">اعلان‌ها</string>
+    <string name="notifications_master">دریافت اعلان‌ها</string>
+    <string name="notifications_master_hint">کلید اصلی همه کانال‌ها. غیرفعال کردن این گزینه همه اعلان‌ها را متوقف می‌کند.</string>
+    <string name="notifications_permission_required">اعلان‌ها در تنظیمات سیستم خاموش است. برای فعال‌سازی، تنظیمات را باز کنید.</string>
+    <string name="notifications_open_system_settings">باز کردن تنظیمات اندروید</string>
+    <string name="notifications_loading_error">بارگذاری تنظیمات اعلان ناموفق بود.</string>
+    <string name="notifications_save_error">ذخیره تنظیمات اعلان ناموفق بود.</string>
+    <string name="notifications_signed_out_hint">برای مدیریت اعلان‌ها وارد شوید.</string>
+    <string name="notifications_fcm_not_configured">اعلان‌ها در این نسخه فعال نیست.</string>
+    <string name="action_notifications">اعلان‌ها</string>
+    <string name="permission_dialog_title">باخبر بمانید</string>
+    <string name="permission_dialog_message">برای دریافت به‌روزرسانی سفارش (پرداخت، ارسال، تحویل) اجازه اعلان‌ها را بدهید.</string>
+    <string name="permission_dialog_allow">اجازه دادن</string>
+    <string name="permission_dialog_not_now">بعداً</string>
 </resources>

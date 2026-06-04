@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Tint applied by the system to status-bar notification icons. Matches the Compose theme primary. -->
+    <color name="notification_accent">#1565C0</color>
+</resources>

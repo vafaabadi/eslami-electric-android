@@ -71,6 +71,7 @@ fun AccountHomeScreen(
     onProfile: () -> Unit,
     onMyOrders: () -> Unit,
     onGuestTrack: () -> Unit,
+    onNotifications: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val viewModel: AccountViewModel = viewModel(factory = authViewModelFactory(authRepository))
@@ -151,6 +152,10 @@ fun AccountHomeScreen(
                 enabled = profileState is ProfileUiState.Ready
             ) {
                 Text(stringResource(R.string.action_profile))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(onClick = onNotifications, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.action_notifications))
             }
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedButton(

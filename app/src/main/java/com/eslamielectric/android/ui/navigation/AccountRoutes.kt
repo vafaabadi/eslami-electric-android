@@ -6,6 +6,7 @@ object AccountRoutes {
     const val SIGNUP = "account/signup"
     const val PROFILE = "account/profile"
     const val FORGOT_PASSWORD = "account/forgot-password"
+    const val NOTIFICATIONS = "account/notifications"
     const val ORDERS = OrderRoutes.ORDERS_LIST
     const val GUEST_TRACK = OrderRoutes.GUEST_TRACK
 }

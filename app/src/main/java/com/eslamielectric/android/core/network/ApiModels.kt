@@ -242,3 +242,49 @@ data class ConfirmBySessionResponse(
     val updated: Boolean? = null,
     val status: String? = null
 )
+
+@Serializable
+data class PushTokenRegisterRequest(
+    val token: String,
+    val platform: String = "android",
+    val appVersion: String? = null,
+    val locale: String? = null
+)
+
+@Serializable
+data class PushTokenRegisterResponse(
+    val ok: Boolean = true,
+    val pushConfigured: Boolean? = null
+)
+
+@Serializable
+data class PushTokenDeleteRequest(val token: String)
+
+@Serializable
+data class PushChannelPreferences(
+    val orders: Boolean = true,
+    val promotions: Boolean = true,
+    val account: Boolean = true,
+    val general: Boolean = true
+)
+
+@Serializable
+data class PushPreferencesDto(
+    @SerialName("master_enabled") val masterEnabled: Boolean = true,
+    val channels: PushChannelPreferences = PushChannelPreferences(),
+    @SerialName("updated_at") val updatedAt: String? = null
+)
+
+@Serializable
+data class PushChannelPatch(
+    val orders: Boolean? = null,
+    val promotions: Boolean? = null,
+    val account: Boolean? = null,
+    val general: Boolean? = null
+)
+
+@Serializable
+data class PushPreferencesPatchRequest(
+    @SerialName("master_enabled") val masterEnabled: Boolean? = null,
+    val channels: PushChannelPatch? = null
+)

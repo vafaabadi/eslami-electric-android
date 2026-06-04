@@ -321,6 +321,65 @@ Supabase Google provider typically uses the **Web** client; SHA-1 is still usefu
 
 Errors (cancelled OAuth, invalid token, missing config) show on the login screen.
 
+## Push notifications (Firebase Cloud Messaging)
+
+The Android client supports FCM push notifications for **order paid**, **order status changes** (`processing`, `shipped`, `delivered`, `cancelled`), and **Stripe payment failed** events. Triggers live in the web/API repo — see [`cursor-my-web-app/lib/push-notifications.js`](../cursor-my-web-app/lib/push-notifications.js).
+
+### 1. Create / open a Firebase project
+
+1. [Firebase Console](https://console.firebase.google.com) → **Add project** (or open the existing Eslami Electric project).
+2. **Project settings** (gear) → **General** → **Your apps** → **Add app** → **Android**:
+   - Package name: `com.eslamielectric.android`
+   - App nickname: `Eslami Electric Android`
+   - Debug signing certificate SHA-1 (optional for FCM, required for Google sign-in via Firebase auth — see [Google sign-in](#google-sign-in-supabase-oauth) above).
+3. Download **`google-services.json`** → place at `app/google-services.json`.
+
+`google-services.json` is **gitignored**. CI / fresh clones get `app/google-services.json.example` as a placeholder — copy and replace the values from the Firebase Console.
+
+### 2. Service account for the backend
+
+In the web repo (`cursor-my-web-app`):
+
+1. Firebase Console → **Project settings** → **Service accounts** → **Generate new private key** → download JSON.
+2. Add to `.env` (local) and to **Vercel** (Production + Preview):
+   ```env
+   FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"…",…}
+   ```
+   Or set `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64=<base64>` if Vercel multi-line is awkward.
+3. Run the new Supabase migration once: `supabase/migrations/019_push_tokens_and_preferences.sql` (SQL Editor or `supabase db push`).
+
+Without the service account, the API still accepts token registration; sends are skipped silently. The Android app remains usable.
+
+### 3. Build with FCM
+
+With `app/google-services.json` present, the `com.google.gms.google-services` plugin auto-applies and `BuildConfig.FCM_CONFIGURED = true`. Without it the plugin is skipped and the client logs `FCM not configured — push token manager idle`. Either way, `:app:compileReleaseKotlin` builds successfully.
+
+```bat
+gradlew.bat :app:compileReleaseKotlin
+gradlew.bat assembleDebug
+```
+
+### 4. Test end-to-end
+
+1. Place a `google-services.json` from your Firebase project at `app/google-services.json`.
+2. Set `FIREBASE_SERVICE_ACCOUNT_JSON` (and run the migration) in `cursor-my-web-app`.
+3. `npm start` in `cursor-my-web-app`. Run the Android app in the emulator.
+4. **Account → Notifications:** grant the runtime permission (Android 13+). The token registers automatically (`POST /api/me/push-tokens`).
+5. **Place a test order** logged-in → on payment success, expect a `Order confirmed` push (channel **Order updates**) within seconds. Tap → app opens the order detail.
+6. **Admin status:** open `/admin/orders.html` on the web, change fulfilment to **shipped** → push delivered to the device.
+7. **Log out** → `DELETE /api/me/push-tokens` removes the token; you stop receiving pushes for that device.
+
+### 5. Channels & deep links
+
+| Channel | When fired | Tap destination |
+|---------|------------|-----------------|
+| `orders` | Order paid, processing, shipped, delivered, cancelled, payment_failed | `eslamielectric://push/order/<orderId>` → Account → Order detail |
+| `account` | Reserved for future security/profile alerts | Account |
+| `promotions` | Reserved for v2 promo broadcasts | Home / product (configurable) |
+| `general` | Catch-all | App home |
+
+User preferences (master + per channel) live at `GET/PATCH /api/me/push-preferences` and surface in **Account → Notifications**.
+
 ## Phase 4 — Checkout (done)
 
 1. Start the web API with Stripe **test** keys: `npm start` in `cursor-my-web-app` (port **3000**).
@@ -366,7 +425,7 @@ Errors (cancelled OAuth, invalid token, missing config) show on the login screen
 7. **Pull-to-refresh:** Home, Products, and My orders lists support pull-down refresh.
 8. **Guest order deep link:** Open `https://www.eslamielectric.com/order.html?token=YOUR_TOKEN` or `eslamielectric://order?token=YOUR_TOKEN` on the device → app opens guest order detail.
 
-**Deferred:** push notifications, full offline cache.
+**Deferred:** full offline cache.
 
 ## GitHub Actions CI / Play upload
 

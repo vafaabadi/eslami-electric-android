@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Status-bar notification icon (Android 5+). Must be alpha-only (system tints it). The shape is a
+    simple lightbulb silhouette matching the Eslami Electric (electrical supplies) brand.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M12,3C8.69,3 6,5.69 6,9c0,2.22 1.21,4.16 3,5.2V17a1,1 0,0 0,1 1h4a1,1 0,0 0,1 -1v-2.8c1.79,-1.04 3,-2.98 3,-5.2 0,-3.31 -2.69,-6 -6,-6zM10,20v1a1,1 0,0 0,1 1h2a1,1 0,0 0,1 -1v-1H10z" />
+</vector>
