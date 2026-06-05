@@ -42,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
@@ -54,12 +55,18 @@ import com.eslamielectric.android.core.network.SignupRequest
 import com.eslamielectric.android.feature.auth.AccountViewModel
 import com.eslamielectric.android.feature.auth.AuthFormState
 import com.eslamielectric.android.feature.auth.AuthRepository
+import com.eslamielectric.android.feature.auth.ClaimAccountUiState
+import com.eslamielectric.android.feature.auth.ClaimAccountViewModel
 import com.eslamielectric.android.feature.auth.ForgotPasswordViewModel
 import com.eslamielectric.android.feature.auth.LoginViewModel
 import com.eslamielectric.android.feature.auth.ProfileUiState
 import com.eslamielectric.android.feature.auth.ProfileViewModel
+import com.eslamielectric.android.feature.auth.ResetPasswordViewModel
 import com.eslamielectric.android.feature.auth.SignUpViewModel
 import com.eslamielectric.android.feature.auth.authViewModelFactory
+import com.eslamielectric.android.feature.auth.claimAccountViewModelFactory
+import com.eslamielectric.android.feature.auth.resetPasswordViewModelFactory
+import com.eslamielectric.android.util.WebLinks
 import kotlinx.coroutines.launch
 
 @Composable
@@ -73,8 +80,10 @@ fun AccountHomeScreen(
     onMyOrders: () -> Unit,
     onGuestTrack: () -> Unit,
     onNotifications: () -> Unit = {},
+    onClaimAccount: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val viewModel: AccountViewModel = viewModel(factory = authViewModelFactory(authRepository))
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = authRepository.isLoggedIn())
     val profileState by viewModel.profileState.collectAsState()
@@ -86,7 +95,8 @@ fun AccountHomeScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .testTag("screen_account"),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -121,8 +131,22 @@ fun AccountHomeScreen(
                 Text(stringResource(R.string.action_login))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(onClick = onSignUp, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = onSignUp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_sign_up")
+            ) {
                 Text(stringResource(R.string.action_sign_up))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedButton(
+                onClick = onClaimAccount,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_claim_account")
+            ) {
+                Text(stringResource(R.string.action_claim_account))
             }
         } else {
             when (val state = profileState) {
@@ -149,7 +173,12 @@ fun AccountHomeScreen(
                 }
             }
             Spacer(modifier = Modifier.height(24.dp))
-            Button(onClick = onMyOrders, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = onMyOrders,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_my_orders")
+            ) {
                 Text(stringResource(R.string.action_my_orders))
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -176,10 +205,30 @@ fun AccountHomeScreen(
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedButton(
                 onClick = { viewModel.logout() },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_logout")
             ) {
                 Text(stringResource(R.string.action_logout))
             }
+        }
+        Spacer(modifier = Modifier.height(24.dp))
+        OutlinedButton(
+            onClick = { WebLinks.openPrivacyPolicy(context, locale) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_privacy_policy")
+        ) {
+            Text(stringResource(R.string.action_privacy_policy))
+        }
+        Spacer(modifier = Modifier.height(12.dp))
+        OutlinedButton(
+            onClick = { WebLinks.openWhatsApp(context, locale) },
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_contact_whatsapp")
+        ) {
+            Text(stringResource(R.string.action_contact_whatsapp))
         }
     }
 }
@@ -380,7 +429,7 @@ fun ForgotPasswordScreen(
     AuthScaffold(
         title = stringResource(R.string.forgot_password_title),
         onBack = onBack,
-        modifier = modifier
+        modifier = modifier.testTag("screen_forgot_password")
     ) {
         Text(
             text = stringResource(R.string.forgot_password_hint),
@@ -393,19 +442,180 @@ fun ForgotPasswordScreen(
             label = { Text(stringResource(R.string.label_email)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("field_forgot_email")
         )
         successMessage?.let { msg ->
             Spacer(modifier = Modifier.height(12.dp))
             Text(msg, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.forgot_password_check_email),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         AuthErrorOrLoading(state)
         Button(
             onClick = { viewModel.submit(email) },
             enabled = state !is AuthFormState.Loading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_send_reset_link")
         ) {
             Text(stringResource(R.string.action_send_reset_link))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ResetPasswordScreen(
+    authRepository: AuthRepository,
+    initialToken: String,
+    onBack: () -> Unit,
+    onResetSuccess: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val viewModel: ResetPasswordViewModel = viewModel(
+        factory = resetPasswordViewModelFactory(authRepository)
+    )
+    val state by viewModel.state.collectAsState()
+    val successMessage by viewModel.successMessage.collectAsState()
+    var token by rememberSaveable(initialToken) { mutableStateOf(initialToken) }
+    var newPassword by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+
+    LaunchedEffect(state) {
+        if (state is AuthFormState.Success) onResetSuccess()
+    }
+
+    AuthScaffold(
+        title = stringResource(R.string.reset_password_title),
+        onBack = onBack,
+        modifier = modifier.testTag("screen_reset_password")
+    ) {
+        Text(
+            text = stringResource(R.string.reset_password_hint),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        if (token.isBlank()) {
+            AuthTextField(token, { token = it; viewModel.clearError() }, R.string.reset_password_token_label)
+        }
+        AuthTextField(newPassword, { newPassword = it; viewModel.clearError() }, R.string.label_password, password = true)
+        AuthTextField(
+            confirmPassword,
+            { confirmPassword = it; viewModel.clearError() },
+            R.string.label_confirm_password,
+            password = true
+        )
+        successMessage?.let { msg ->
+            Text(msg, color = MaterialTheme.colorScheme.primary, style = MaterialTheme.typography.bodyMedium)
+        }
+        AuthErrorOrLoading(state)
+        Button(
+            onClick = { viewModel.submit(token, newPassword, confirmPassword) },
+            enabled = state !is AuthFormState.Loading,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_reset_password_submit")
+        ) {
+            Text(stringResource(R.string.action_reset_password))
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ClaimAccountScreen(
+    authRepository: AuthRepository,
+    initialToken: String,
+    onBack: () -> Unit,
+    onClaimed: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val viewModel: ClaimAccountViewModel = viewModel(
+        factory = claimAccountViewModelFactory(authRepository, initialToken)
+    )
+    val uiState by viewModel.uiState.collectAsState()
+    val submitState by viewModel.submitState.collectAsState()
+    var token by rememberSaveable(initialToken) { mutableStateOf(initialToken) }
+    var password by rememberSaveable { mutableStateOf("") }
+    var confirmPassword by rememberSaveable { mutableStateOf("") }
+
+    AuthScaffold(
+        title = stringResource(R.string.claim_account_title),
+        onBack = onBack,
+        modifier = modifier.testTag("screen_claim_account")
+    ) {
+        Text(
+            text = stringResource(R.string.claim_account_intro),
+            style = MaterialTheme.typography.bodyMedium
+        )
+        OutlinedTextField(
+            value = token,
+            onValueChange = {
+                token = it
+                viewModel.updateToken(it)
+            },
+            label = { Text(stringResource(R.string.claim_account_token_label)) },
+            placeholder = { Text(stringResource(R.string.claim_account_token_hint)) },
+            singleLine = true,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("field_claim_token")
+        )
+        OutlinedButton(
+            onClick = {
+                viewModel.updateToken(token)
+                viewModel.validateToken()
+            },
+            enabled = uiState !is ClaimAccountUiState.Validating,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_claim_validate")
+        ) {
+            Text(stringResource(R.string.claim_account_validate))
+        }
+        when (val s = uiState) {
+            ClaimAccountUiState.Validating -> CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+            is ClaimAccountUiState.Ready -> {
+                Text(
+                    text = stringResource(R.string.claim_account_email_label, s.maskedEmail),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+            is ClaimAccountUiState.Error -> Text(s.message, color = MaterialTheme.colorScheme.error)
+            ClaimAccountUiState.Idle -> Unit
+        }
+        AuthTextField(password, { password = it; viewModel.clearSubmitError() }, R.string.label_password, password = true)
+        AuthTextField(
+            confirmPassword,
+            { confirmPassword = it; viewModel.clearSubmitError() },
+            R.string.label_confirm_password,
+            password = true
+        )
+        if (submitState is AuthFormState.Error) {
+            Text(
+                (submitState as AuthFormState.Error).message,
+                color = MaterialTheme.colorScheme.error
+            )
+        }
+        if (submitState is AuthFormState.Loading) {
+            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+        }
+        Button(
+            onClick = { viewModel.claim(password, confirmPassword, onClaimed) },
+            enabled = submitState !is AuthFormState.Loading && uiState is ClaimAccountUiState.Ready,
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_claim_account_submit")
+        ) {
+            Text(stringResource(R.string.claim_account_submit))
         }
     }
 }

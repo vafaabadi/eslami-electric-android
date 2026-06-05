@@ -43,6 +43,31 @@ class CheckoutRepository(
 
     fun getPendingSessionId(): String? = pendingCheckoutStore.getSessionId()
 
+    fun getPendingEditOrder(): PendingCheckoutStore.PendingEditOrder? =
+        pendingCheckoutStore.getPendingEditOrder()
+
+    suspend fun loadPendingOrderForEdit(orderId: String): String {
+        val token = sessionStore.getToken()
+        if (token.isNullOrBlank()) throw CheckoutException.SessionExpired
+        try {
+            val draft = api.getBasketDraft(NetworkModule.bearer(token)!!, orderId)
+            basketRepository.loadFromDraft(draft.basket)
+            pendingCheckoutStore.setPendingEditOrder(
+                orderId = draft.orderId,
+                orderLabel = draft.orderNumber,
+                fulfillmentType = draft.fulfillmentType,
+                shippingAddress = draft.shippingAddress
+            )
+            return draft.orderNumber ?: draft.orderId
+        } catch (e: HttpException) {
+            if (e.code() == 401) {
+                sessionStore.setToken(null)
+                throw CheckoutException.SessionExpired
+            }
+            throw CheckoutException.Api(mapApiException(e).message, e.code())
+        }
+    }
+
     suspend fun startCheckout(context: Context, input: CheckoutInput): CheckoutStartResult {
         val items = basketRepository.getItemsOnce()
         if (items.isEmpty()) {
@@ -52,6 +77,7 @@ class CheckoutRepository(
         val lineItems = basketRepository.toCheckoutLineItems(input.locale)
         val token = sessionStore.getToken()
         val auth = NetworkModule.bearer(token)
+        val pendingOrderId = pendingCheckoutStore.getPendingEditOrder()?.orderId
 
         try {
             val response = api.createCheckoutSession(
@@ -63,7 +89,8 @@ class CheckoutRepository(
                     guestEmail = input.guestEmail?.trim()?.lowercase(),
                     guestName = input.guestName?.trim(),
                     guestPhone = input.guestPhone?.trim()?.ifBlank { null },
-                    shippingAddress = input.shippingAddress
+                    shippingAddress = input.shippingAddress,
+                    pendingOrderId = pendingOrderId
                 )
             )
             pendingCheckoutStore.setSessionId(response.sessionId)
@@ -91,6 +118,7 @@ class CheckoutRepository(
             val order = api.getOrderBySession(sessionId)
             if (order.status == "paid") {
                 basketRepository.clear()
+                pendingCheckoutStore.clearPendingEditOrder()
                 pendingCheckoutStore.setSessionId(null)
                 CheckoutReturnResult.Paid(order)
             } else {

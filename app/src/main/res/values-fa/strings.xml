@@ -155,4 +155,27 @@
     <string name="permission_dialog_message">برای دریافت به‌روزرسانی سفارش (پرداخت، ارسال، تحویل) اجازه اعلان‌ها را بدهید.</string>
     <string name="permission_dialog_allow">اجازه دادن</string>
     <string name="permission_dialog_not_now">بعداً</string>
+
+    <string name="order_edit_before_payment">ویرایش قبل از پرداخت</string>
+    <string name="basket_edit_pending_banner">در حال ویرایش سفارش پرداخت‌نشده %1$s هستید. اقلام را تغییر دهید یا دوباره تسویه کنید.</string>
+    <string name="reset_password_title">بازنشانی رمز عبور</string>
+    <string name="reset_password_hint">رمز عبور جدید برای حساب خود انتخاب کنید.</string>
+    <string name="reset_password_token_label">توکن بازنشانی</string>
+    <string name="reset_password_success">رمز عبور بازنشانی شد. اکنون می‌توانید وارد شوید.</string>
+    <string name="action_reset_password">بازنشانی رمز عبور</string>
+    <string name="label_confirm_password">تأیید رمز عبور</string>
+    <string name="forgot_password_check_email">ایمیل خود را برای لینک بازنشانی بررسی کنید. می‌توانید لینک را در این برنامه باز کنید.</string>
+    <string name="action_privacy_policy">سیاست حریم خصوصی</string>
+    <string name="action_contact_whatsapp">تماس از طریق واتساپ</string>
+    <string name="whatsapp_fab_content_description">چت در واتساپ</string>
+    <string name="claim_account_title">ایجاد حساب از سفارش</string>
+    <string name="claim_account_intro">از لینک ایجاد حساب در ایمیل تأیید سفارش مهمان استفاده کنید تا رمز تعیین کرده و سفارش‌ها را ببینید.</string>
+    <string name="claim_account_token_label">توکن لینک ایجاد حساب</string>
+    <string name="claim_account_token_hint">توکن را از لینک ایمیل بچسبانید (…/claim-account?token=…)</string>
+    <string name="claim_account_validate">اعتبارسنجی لینک</string>
+    <string name="claim_account_email_label">ایمیل سفارش: %1$s</string>
+    <string name="claim_account_submit">ایجاد حساب</string>
+    <string name="action_claim_account">ایجاد حساب از سفارش</string>
+    <string name="checkout_claim_account_hint">لینک ایجاد حساب در ایمیل دارید؟ برای ذخیره این سفارش در پروفایل، حساب بسازید.</string>
+    <string name="checkout_claim_account">ایجاد حساب از این سفارش</string>
 </resources>

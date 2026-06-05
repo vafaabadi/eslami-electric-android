@@ -155,4 +155,28 @@
     <string name="permission_dialog_message">Allow notifications to get order updates (paid, shipped, delivered).</string>
     <string name="permission_dialog_allow">Allow</string>
     <string name="permission_dialog_not_now">Not now</string>
+
+    <!-- Web parity: edit pending order, reset password, privacy, WhatsApp, claim account -->
+    <string name="order_edit_before_payment">Edit before payment</string>
+    <string name="basket_edit_pending_banner">You are editing unpaid order %1$s. Change items or checkout again.</string>
+    <string name="reset_password_title">Reset password</string>
+    <string name="reset_password_hint">Choose a new password for your account.</string>
+    <string name="reset_password_token_label">Reset token</string>
+    <string name="reset_password_success">Password has been reset. You can now log in.</string>
+    <string name="action_reset_password">Reset password</string>
+    <string name="label_confirm_password">Confirm password</string>
+    <string name="forgot_password_check_email">Check your email for a reset link. You can also open the link in this app.</string>
+    <string name="action_privacy_policy">Privacy policy</string>
+    <string name="action_contact_whatsapp">Contact us on WhatsApp</string>
+    <string name="whatsapp_fab_content_description">Chat on WhatsApp</string>
+    <string name="claim_account_title">Create account from order</string>
+    <string name="claim_account_intro">Use the claim link from your guest order confirmation email to create a password and view your orders.</string>
+    <string name="claim_account_token_label">Claim link token</string>
+    <string name="claim_account_token_hint">Paste token from email link (…/claim-account?token=…)</string>
+    <string name="claim_account_validate">Validate link</string>
+    <string name="claim_account_email_label">Email on order: %1$s</string>
+    <string name="claim_account_submit">Create account</string>
+    <string name="action_claim_account">Create account from order</string>
+    <string name="checkout_claim_account_hint">Received a claim link in your email? Create an account to save this order to your profile.</string>
+    <string name="checkout_claim_account">Create account from this order</string>
 </resources>

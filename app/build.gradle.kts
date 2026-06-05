@@ -58,7 +58,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = versionCodeOverride ?: 12
-        versionName = "1.0.11"
+        versionName = "1.0.12"
 
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))

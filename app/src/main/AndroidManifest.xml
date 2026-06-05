@@ -88,6 +88,30 @@
                     android:scheme="eslamielectric"
                     android:host="checkout-result" />
             </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="eslamielectric"
+                    android:host="reset-password" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="eslamielectric"
+                    android:host="claim-account" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="eslamielectric"
+                    android:host="basket" />
+            </intent-filter>
         </activity>
 
         <!-- FCM listener service. Keeps notification settings centralised here. -->

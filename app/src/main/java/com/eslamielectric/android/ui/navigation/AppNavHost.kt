@@ -1,8 +1,11 @@
 package com.eslamielectric.android.ui.navigation
 
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Chat
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
@@ -23,6 +26,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
@@ -30,11 +34,13 @@ import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.eslamielectric.android.core.data.BasketRepository
 import com.eslamielectric.android.core.data.SessionStore
 import com.eslamielectric.android.feature.auth.AuthRepository
+import com.eslamielectric.android.feature.basket.CheckoutException
 import com.eslamielectric.android.feature.basket.CheckoutRepository
 import com.eslamielectric.android.feature.catalog.CatalogRepository
 import com.eslamielectric.android.feature.notifications.NotificationPreferencesRepository
 import com.eslamielectric.android.feature.orders.OrdersRepository
 import com.eslamielectric.android.ui.screens.AccountHomeScreen
+import com.eslamielectric.android.ui.screens.ClaimAccountScreen
 import com.eslamielectric.android.ui.screens.GuestTrackScreen
 import com.eslamielectric.android.ui.screens.MyOrdersScreen
 import com.eslamielectric.android.ui.screens.NotificationsScreen
@@ -43,6 +49,9 @@ import com.eslamielectric.android.ui.screens.BasketScreen
 import com.eslamielectric.android.ui.screens.CheckoutResultScreen
 import com.eslamielectric.android.ui.screens.CheckoutScreen
 import com.eslamielectric.android.ui.screens.ForgotPasswordScreen
+import com.eslamielectric.android.ui.screens.ResetPasswordScreen
+import com.eslamielectric.android.util.WebLinks
+import com.eslamielectric.android.R
 import com.eslamielectric.android.ui.screens.HomeScreen
 import com.eslamielectric.android.ui.screens.LoginScreen
 import com.eslamielectric.android.ui.screens.ProductDetailScreen
@@ -68,6 +77,9 @@ fun AppNavHost(
     deepLinkProductId: String? = null,
     openOrdersFromDeepLink: Boolean = false,
     openBasketFromDeepLink: Boolean = false,
+    deepLinkEditOrderId: String? = null,
+    deepLinkResetToken: String? = null,
+    deepLinkClaimToken: String? = null,
     deepLinkCheckoutResultRoute: String? = null,
     onDeepLinkConsumed: () -> Unit = {},
     onLocaleChanged: (String) -> Unit = {},
@@ -79,6 +91,27 @@ fun AppNavHost(
     val basketItems by basketRepository.itemsFlow.collectAsState(initial = emptyList())
     val basketCount = basketRepository.itemCount(basketItems)
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    val pendingEditOrderLabel = checkoutRepository.getPendingEditOrder()?.orderLabel
+
+    val editPendingOrder: (String) -> Unit = { orderId ->
+        scope.launch {
+            try {
+                checkoutRepository.loadPendingOrderForEdit(orderId)
+                navController.navigate(AppDestinations.Basket.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                }
+            } catch (_: CheckoutException.SessionExpired) {
+                navController.navigate("${AppDestinations.Account.route}?openLogin=true") {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                }
+            } catch (_: Exception) {
+                // Basket draft errors surface when user retries from order detail.
+            }
+        }
+    }
 
     LaunchedEffect(deepLinkGuestToken) {
         val token = deepLinkGuestToken?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
@@ -98,6 +131,41 @@ fun AppNavHost(
 
     // Notification taps route here. For order:<id> we open the order detail under Account so the
     // Back stack lands the user at Account → My orders, which mirrors web behaviour.
+    LaunchedEffect(deepLinkEditOrderId) {
+        val orderId = deepLinkEditOrderId?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        if (authRepository.isLoggedIn()) {
+            editPendingOrder(orderId)
+        } else {
+            navController.navigate("${AppDestinations.Account.route}?openLogin=true") {
+                popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                launchSingleTop = true
+            }
+        }
+        onDeepLinkConsumed()
+    }
+
+    LaunchedEffect(deepLinkResetToken) {
+        val token = deepLinkResetToken?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        navController.navigate(
+            "${AppDestinations.Account.route}?openReset=true&resetToken=${android.net.Uri.encode(token)}"
+        ) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+        }
+        onDeepLinkConsumed()
+    }
+
+    LaunchedEffect(deepLinkClaimToken) {
+        val token = deepLinkClaimToken?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        navController.navigate(
+            "${AppDestinations.Account.route}?openClaim=true&claimToken=${android.net.Uri.encode(token)}"
+        ) {
+            popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+            launchSingleTop = true
+        }
+        onDeepLinkConsumed()
+    }
+
     LaunchedEffect(deepLinkOrderId, deepLinkProductId, openOrdersFromDeepLink, openBasketFromDeepLink) {
         val orderId = deepLinkOrderId?.takeIf { it.isNotBlank() }
         val productId = deepLinkProductId?.takeIf { it.isNotBlank() }
@@ -137,6 +205,19 @@ fun AppNavHost(
 
     Scaffold(
         modifier = modifier.semantics { testTagsAsResourceId = true },
+        floatingActionButton = {
+            if (showBottomBar) {
+                FloatingActionButton(
+                    onClick = { WebLinks.openWhatsApp(context, locale) },
+                    modifier = Modifier.testTag("fab_whatsapp")
+                ) {
+                    Icon(
+                        Icons.Filled.Chat,
+                        contentDescription = stringResource(R.string.whatsapp_fab_content_description)
+                    )
+                }
+            }
+        },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
@@ -257,6 +338,7 @@ fun AppNavHost(
                 BasketScreen(
                     items = basketItems,
                     basketRepository = basketRepository,
+                    pendingEditOrderLabel = pendingEditOrderLabel,
                     onProceedToCheckout = {
                         navController.navigate(CheckoutRoutes.CHECKOUT)
                     }
@@ -319,6 +401,7 @@ fun AppNavHost(
                 val orderId = entry.arguments?.getString("orderId")?.takeIf { it != "-" }
                 val guestToken = entry.arguments?.getString("guestToken")?.takeIf { it != "-" }
                 val canTrackGuestOrder = success && !orderId.isNullOrBlank() && !guestToken.isNullOrBlank()
+                val canClaimAccount = success && canTrackGuestOrder && !authRepository.isLoggedIn()
                 CheckoutResultScreen(
                     success = success,
                     order = if (orderNumber != null) {
@@ -341,6 +424,16 @@ fun AppNavHost(
                     } else {
                         null
                     },
+                    onClaimAccount = if (canClaimAccount) {
+                        {
+                            navController.navigate("${AppDestinations.Account.route}?openClaim=true") {
+                                popUpTo(CheckoutRoutes.RESULT) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    } else {
+                        null
+                    },
                     onDone = {
                         navController.navigate(AppDestinations.Home.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
@@ -353,7 +446,7 @@ fun AppNavHost(
                 )
             }
             composable(
-                route = "${AppDestinations.Account.route}?openProfile={openProfile}&openLogin={openLogin}&openOrder={openOrder}&openOrders={openOrders}",
+                route = "${AppDestinations.Account.route}?openProfile={openProfile}&openLogin={openLogin}&openOrder={openOrder}&openOrders={openOrders}&openReset={openReset}&resetToken={resetToken}&openClaim={openClaim}&claimToken={claimToken}",
                 arguments = listOf(
                     navArgument("openProfile") {
                         type = NavType.BoolType
@@ -371,6 +464,24 @@ fun AppNavHost(
                     navArgument("openOrders") {
                         type = NavType.BoolType
                         defaultValue = false
+                    },
+                    navArgument("openReset") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                    navArgument("resetToken") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("openClaim") {
+                        type = NavType.BoolType
+                        defaultValue = false
+                    },
+                    navArgument("claimToken") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
                     }
                 )
             ) { entry ->
@@ -378,8 +489,14 @@ fun AppNavHost(
                 val openLogin = entry.arguments?.getBoolean("openLogin") ?: false
                 val openOrder = entry.arguments?.getString("openOrder")?.takeIf { it.isNotBlank() }
                 val openOrders = entry.arguments?.getBoolean("openOrders") ?: false
+                val openReset = entry.arguments?.getBoolean("openReset") ?: false
+                val resetToken = entry.arguments?.getString("resetToken").orEmpty()
+                val openClaim = entry.arguments?.getBoolean("openClaim") ?: false
+                val claimToken = entry.arguments?.getString("claimToken").orEmpty()
                 val accountNav = rememberNavController()
                 val accountStart = when {
+                    openReset -> AccountRoutes.resetPassword(resetToken)
+                    openClaim -> AccountRoutes.claimAccount(claimToken)
                     openLogin -> AccountRoutes.LOGIN
                     openProfile -> AccountRoutes.PROFILE
                     openOrder != null -> OrderRoutes.orderDetail(openOrder)
@@ -405,7 +522,8 @@ fun AppNavHost(
                             onProfile = { accountNav.navigate(AccountRoutes.PROFILE) },
                             onMyOrders = { accountNav.navigate(AccountRoutes.ORDERS) },
                             onGuestTrack = { accountNav.navigate(AccountRoutes.GUEST_TRACK) },
-                            onNotifications = { accountNav.navigate(AccountRoutes.NOTIFICATIONS) }
+                            onNotifications = { accountNav.navigate(AccountRoutes.NOTIFICATIONS) },
+                            onClaimAccount = { accountNav.navigate(AccountRoutes.claimAccount()) }
                         )
                     }
                     composable(AccountRoutes.NOTIFICATIONS) {
@@ -428,6 +546,7 @@ fun AppNavHost(
                             onOrderClick = { order ->
                                 accountNav.navigate(OrderRoutes.orderDetail(order.id))
                             },
+                            onEditBeforePayment = { order -> editPendingOrder(order.id) },
                             onSessionExpired = {
                                 accountNav.navigate(AccountRoutes.LOGIN) {
                                     popUpTo(AccountRoutes.HOME) { inclusive = false }
@@ -452,7 +571,8 @@ fun AppNavHost(
                                     popUpTo(AccountRoutes.HOME) { inclusive = false }
                                 }
                             },
-                            onProfileIncomplete = { accountNav.navigate(AccountRoutes.PROFILE) }
+                            onProfileIncomplete = { accountNav.navigate(AccountRoutes.PROFILE) },
+                            onEditBeforePayment = { editPendingOrder(orderId) }
                         )
                     }
                     composable(AccountRoutes.GUEST_TRACK) {
@@ -525,6 +645,48 @@ fun AppNavHost(
                         ForgotPasswordScreen(
                             authRepository = authRepository,
                             onBack = { accountNav.popBackStack() }
+                        )
+                    }
+                    composable(
+                        route = AccountRoutes.RESET_PASSWORD,
+                        arguments = listOf(
+                            navArgument("token") {
+                                type = NavType.StringType
+                                defaultValue = ""
+                            }
+                        )
+                    ) { resetEntry ->
+                        val token = resetEntry.arguments?.getString("token").orEmpty()
+                        ResetPasswordScreen(
+                            authRepository = authRepository,
+                            initialToken = token,
+                            onBack = { accountNav.popBackStack() },
+                            onResetSuccess = {
+                                accountNav.navigate(AccountRoutes.LOGIN) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = false }
+                                }
+                            }
+                        )
+                    }
+                    composable(
+                        route = AccountRoutes.CLAIM_ACCOUNT,
+                        arguments = listOf(
+                            navArgument("token") {
+                                type = NavType.StringType
+                                defaultValue = ""
+                            }
+                        )
+                    ) { claimEntry ->
+                        val token = claimEntry.arguments?.getString("token").orEmpty()
+                        ClaimAccountScreen(
+                            authRepository = authRepository,
+                            initialToken = token,
+                            onBack = { accountNav.popBackStack() },
+                            onClaimed = {
+                                accountNav.navigate(AccountRoutes.ORDERS) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = false }
+                                }
+                            }
                         )
                     }
                     composable(AccountRoutes.PROFILE) {

@@ -25,6 +25,9 @@ class MainActivity : ComponentActivity() {
     private var deepLinkProductId by mutableStateOf<String?>(null)
     private var openOrdersFromDeepLink by mutableStateOf(false)
     private var openBasketFromDeepLink by mutableStateOf(false)
+    private var deepLinkEditOrderId by mutableStateOf<String?>(null)
+    private var deepLinkResetToken by mutableStateOf<String?>(null)
+    private var deepLinkClaimToken by mutableStateOf<String?>(null)
     private var deepLinkCheckoutResultRoute by mutableStateOf<String?>(null)
 
     override fun attachBaseContext(newBase: Context) {
@@ -35,6 +38,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         deepLinkGuestToken = parseGuestOrderToken(intent)
+        applyAuthAndBasketDeepLinks(intent)
         applyPushDeepLink(intent)
         applyCheckoutResultDeepLink(intent)
         runCatching { app.authRepository.handleOAuthDeepLink(intent) }
@@ -57,6 +61,9 @@ class MainActivity : ComponentActivity() {
                     deepLinkProductId = deepLinkProductId,
                     openOrdersFromDeepLink = openOrdersFromDeepLink,
                     openBasketFromDeepLink = openBasketFromDeepLink,
+                    deepLinkEditOrderId = deepLinkEditOrderId,
+                    deepLinkResetToken = deepLinkResetToken,
+                    deepLinkClaimToken = deepLinkClaimToken,
                     deepLinkCheckoutResultRoute = deepLinkCheckoutResultRoute,
                     onDeepLinkConsumed = {
                         deepLinkGuestToken = null
@@ -64,6 +71,9 @@ class MainActivity : ComponentActivity() {
                         deepLinkProductId = null
                         openOrdersFromDeepLink = false
                         openBasketFromDeepLink = false
+                        deepLinkEditOrderId = null
+                        deepLinkResetToken = null
+                        deepLinkClaimToken = null
                         deepLinkCheckoutResultRoute = null
                     },
                     onLocaleChanged = { _ ->
@@ -79,8 +89,26 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         runCatching { app.authRepository.handleOAuthDeepLink(intent) }
         parseGuestOrderToken(intent)?.let { deepLinkGuestToken = it }
+        applyAuthAndBasketDeepLinks(intent)
         applyPushDeepLink(intent)
         applyCheckoutResultDeepLink(intent)
+    }
+
+    private fun applyAuthAndBasketDeepLinks(intent: Intent?) {
+        val data: Uri = intent?.data ?: return
+        if (data.scheme != "eslamielectric") return
+        when (data.host) {
+            "reset-password" -> deepLinkResetToken = data.getQueryParameter("token")?.trim()?.takeIf { it.isNotEmpty() }
+            "claim-account" -> deepLinkClaimToken = data.getQueryParameter("token")?.trim()?.takeIf { it.isNotEmpty() }
+            "basket" -> {
+                val editOrder = data.getQueryParameter("editOrder")?.trim()?.takeIf { it.isNotEmpty() }
+                if (editOrder != null) {
+                    deepLinkEditOrderId = editOrder
+                } else {
+                    openBasketFromDeepLink = true
+                }
+            }
+        }
     }
 
     private fun applyCheckoutResultDeepLink(intent: Intent?) {
