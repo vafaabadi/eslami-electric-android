@@ -556,3 +556,5 @@ Signed local release needs `keystore.properties` (see [Release signing](#release
 ## License
 
 Proprietary — Eslami Electric.
+
+<!-- chore: trigger release -->
