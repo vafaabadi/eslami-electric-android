@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -467,13 +468,19 @@ fun GuestTrackScreen(
                 style = MaterialTheme.typography.bodyMedium
             )
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                TextButton(onClick = { useToken = false; viewModel.clearError() }) {
+                TextButton(
+                    onClick = { useToken = false; viewModel.clearError() },
+                    modifier = Modifier.testTag("guest_track_mode_email")
+                ) {
                     Text(
                         stringResource(R.string.guest_track_mode_email),
                         fontWeight = if (!useToken) FontWeight.Bold else FontWeight.Normal
                     )
                 }
-                TextButton(onClick = { useToken = true; viewModel.clearError() }) {
+                TextButton(
+                    onClick = { useToken = true; viewModel.clearError() },
+                    modifier = Modifier.testTag("guest_track_mode_token")
+                ) {
                     Text(
                         stringResource(R.string.guest_track_mode_token),
                         fontWeight = if (useToken) FontWeight.Bold else FontWeight.Normal
@@ -487,14 +494,18 @@ fun GuestTrackScreen(
                     label = { Text(stringResource(R.string.label_email)) },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("field_guest_email")
                 )
                 OutlinedTextField(
                     value = orderRef,
                     onValueChange = { orderRef = it; viewModel.clearError() },
                     label = { Text(stringResource(R.string.guest_track_order_ref)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("field_guest_order_ref"),
                     placeholder = { Text(stringResource(R.string.guest_track_order_ref_hint)) }
                 )
             } else {
@@ -503,7 +514,9 @@ fun GuestTrackScreen(
                     onValueChange = { trackingToken = it; viewModel.clearError() },
                     label = { Text(stringResource(R.string.guest_track_token_label)) },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("field_guest_token"),
                     placeholder = { Text(stringResource(R.string.guest_track_token_hint)) },
                     supportingText = {
                         Text(stringResource(R.string.guest_track_token_supporting))
@@ -539,7 +552,9 @@ fun GuestTrackScreen(
                     }
                 },
                 enabled = state !is GuestTrackUiState.Loading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_guest_track_submit")
             ) {
                 Text(stringResource(R.string.guest_track_submit))
             }

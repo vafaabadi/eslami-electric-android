@@ -6,6 +6,7 @@ Native **Kotlin + Jetpack Compose** customer app for [Eslami Electric](https://w
 |--------|----------|
 | HTTP API contract | [mobile-api.md](https://github.com/vafaabadi/EslamiElectric/blob/main/docs/mobile-api.md) (local: [`cursor-my-web-app/docs/mobile-api.md`](../cursor-my-web-app/docs/mobile-api.md)) |
 | Web backend | [EslamiElectric](https://github.com/vafaabadi/EslamiElectric) (local: [`cursor-my-web-app`](../cursor-my-web-app)) |
+| **Appium E2E + unit/JaCoCo testing** | [`appium/README.md`](appium/README.md) |
 
 ## Prerequisites
 
@@ -224,7 +225,10 @@ Use this before promoting beyond internal testing.
 ```bat
 gradlew.bat assembleDebug
 gradlew.bat bundleRelease
+gradlew.bat testDebugUnitTest jacocoTestReport
 ```
+
+Unit test HTML + JaCoCo coverage: `app/build/reports/jacoco/jacocoTestReport/html/index.html`. Appium E2E: see [`appium/README.md`](appium/README.md).
 
 Requires **JDK 17** on `JAVA_HOME`. Signed `bundleRelease` needs `keystore.properties` (see [Release signing](#release-signing)).
 

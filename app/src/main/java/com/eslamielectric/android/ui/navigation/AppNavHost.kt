@@ -21,8 +21,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.testTagsAsResourceId
 import com.eslamielectric.android.core.data.BasketRepository
 import com.eslamielectric.android.core.data.SessionStore
 import com.eslamielectric.android.feature.auth.AuthRepository
@@ -47,6 +51,7 @@ import com.eslamielectric.android.ui.screens.ProfileScreen
 import com.eslamielectric.android.ui.screens.SignUpScreen
 import kotlinx.coroutines.launch
 
+@OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun AppNavHost(
     basketRepository: BasketRepository,
@@ -122,12 +127,13 @@ fun AppNavHost(
     val showBottomBar = currentRouteBase in AppDestinations.bottomNav.map { it.route }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.semantics { testTagsAsResourceId = true },
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {
                     AppDestinations.bottomNav.forEach { dest ->
                         NavigationBarItem(
+                            modifier = Modifier.testTag("nav_tab_${dest.route}"),
                             selected = currentRouteBase == dest.route,
                             onClick = {
                                 navController.navigate(dest.route) {
