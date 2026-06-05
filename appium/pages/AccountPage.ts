@@ -1,6 +1,7 @@
 import type { Browser } from 'webdriverio';
 import { Selectors, UiText } from '../helpers/selectors';
 import { BasePage } from './BasePage';
+import { ClaimAccountPage } from './ClaimAccountPage';
 import { GuestTrackOrderPage } from './GuestTrackOrderPage';
 import { LoginPage } from './LoginPage';
 import { MyOrdersPage } from './MyOrdersPage';
@@ -79,5 +80,22 @@ export class AccountPage extends BasePage {
   async toggleLocaleFa(): Promise<void> {
     await (await this.byTestTag(Selectors.localeFa)).click();
     await this.pause(600);
+  }
+
+  async openClaimAccount(): Promise<ClaimAccountPage> {
+    await (await this.byTestTag(Selectors.claimAccountBtn)).click();
+    const claim = new ClaimAccountPage(this.driver);
+    await claim.expectClaimAccountVisible();
+    return claim;
+  }
+
+  async expectPrivacyPolicyButtonVisible(): Promise<void> {
+    const btn = await this.byTestTag(Selectors.privacyPolicy, 10_000);
+    await expect(btn).toBeDisplayed();
+  }
+
+  async expectWhatsAppButtonVisible(): Promise<void> {
+    const btn = await this.byTestTag(Selectors.contactWhatsapp, 10_000);
+    await expect(btn).toBeDisplayed();
   }
 }

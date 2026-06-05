@@ -2,8 +2,11 @@ import { $, driver } from '@wdio/globals';
 import { AccountPage } from '../pages/AccountPage';
 import { BasketPage } from '../pages/BasketPage';
 import { CheckoutResultPage } from '../pages/CheckoutResultPage';
+import { ClaimAccountPage } from '../pages/ClaimAccountPage';
 import { HomePage } from '../pages/HomePage';
 import { NavigationBar } from '../pages/NavigationBar';
+import { OrderDetailPage } from '../pages/OrderDetailPage';
+import { ResetPasswordPage } from '../pages/ResetPasswordPage';
 import { APP_ACTIVITY, APP_PACKAGE } from './selectors';
 
 export async function dismissSystemDialogs() {
@@ -56,6 +59,31 @@ export async function openCheckoutResultDeepLink(options: {
 
 export async function openPushDeepLink(route: 'orders' | 'basket' | `order/${string}`) {
   await openDeepLink(`eslamielectric://push/${route}`);
+}
+
+/** Deep link: eslamielectric://reset-password?token=… */
+export async function openResetPasswordDeepLink(token: string) {
+  const params = new URLSearchParams({ token });
+  await openDeepLink(`eslamielectric://reset-password?${params.toString()}`);
+  return new ResetPasswordPage(browser);
+}
+
+/** Deep link: eslamielectric://claim-account?token=… */
+export async function openClaimAccountDeepLink(token: string) {
+  const params = new URLSearchParams({ token });
+  await openDeepLink(`eslamielectric://claim-account?${params.toString()}`);
+  return new ClaimAccountPage(browser);
+}
+
+/** Deep link: eslamielectric://push/order/<orderId> */
+export async function openOrderDetailDeepLink(orderId: string) {
+  await openPushDeepLink(`order/${orderId}`);
+  return new OrderDetailPage(browser);
+}
+
+/** adb shell am start -a android.intent.action.VIEW -d "eslamielectric://…" */
+export async function openAppDeepLink(uri: string) {
+  await openDeepLink(uri);
 }
 
 export async function openCheckoutAsGuest() {

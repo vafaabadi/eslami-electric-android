@@ -103,6 +103,18 @@ export const UiText = {
   accountLogin: 'Sign in',
   guestTrackOrderRef: 'Order number',
   searchDefaultTerm: 'a',
+  resetPasswordTitle: 'Reset password',
+  resetPasswordSubmit: 'Reset password',
+  claimAccountTitle: 'Create account from order',
+  claimValidate: 'Validate link',
+  claimAccountSubmit: 'Create account',
+  claimAccountEntry: 'Create account from order',
+  privacyPolicy: 'Privacy policy',
+  contactWhatsapp: 'Contact us on WhatsApp',
+  editBeforePayment: 'Edit before payment',
+  editPendingBannerPrefix: 'You are editing unpaid order',
+  checkoutClaimAccount: 'Create account from this order',
+  checkoutClaimHint: 'Received a claim link',
 } as const;
 
 export type SelectorKey = keyof typeof Selectors;

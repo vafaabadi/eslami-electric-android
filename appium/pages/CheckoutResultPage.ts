@@ -32,6 +32,16 @@ export class CheckoutResultPage extends BasePage {
     await this.pause(800);
   }
 
+  async expectClaimAccountCtaVisible(): Promise<void> {
+    const btn = await this.byTestTagIfExists(Selectors.checkoutClaimAccount, 10_000);
+    if (btn) {
+      await expect(btn).toBeDisplayed();
+      return;
+    }
+    expect(await this.textExists(UiText.checkoutClaimAccount)).toBe(true);
+    expect(await this.textExists(UiText.checkoutClaimHint)).toBe(true);
+  }
+
   async isIncompleteOrCheckoutVisible(): Promise<boolean> {
     return (
       (await this.textExists('Payment not completed')) ||

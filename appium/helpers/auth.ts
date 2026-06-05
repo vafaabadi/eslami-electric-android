@@ -1,10 +1,9 @@
 import { AccountPage } from '../pages/AccountPage';
 import { LoginPage } from '../pages/LoginPage';
 import { launchFresh } from './app';
+import { hasTestCredentials } from './env';
 
-export function hasTestCredentials(): boolean {
-  return Boolean(process.env.TEST_EMAIL?.trim() && process.env.TEST_PASSWORD?.trim());
-}
+export { hasTestCredentials } from './env';
 
 export async function loginWithEnvCredentials() {
   if (!hasTestCredentials()) {
