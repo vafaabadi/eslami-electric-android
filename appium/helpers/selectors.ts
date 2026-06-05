@@ -1,4 +1,5 @@
 export const APP_PACKAGE = 'com.eslamielectric.android';
+export const APP_ACTIVITY = 'com.eslamielectric.android.MainActivity';
 
 /** Compose testTag exposed via semantics { testTagsAsResourceId = true } */
 export function resourceId(testTag: string): string {
@@ -22,11 +23,13 @@ export const Selectors = {
   basketLineItem: 'basket_line_item',
   basketTotal: 'basket_total',
   basketEmpty: 'basket_empty',
+  checkoutProceed: 'btn_checkout_proceed',
   accountLogin: 'btn_account_login',
   guestTrack: 'btn_guest_track',
   loginEmail: 'field_login_email',
   loginPassword: 'field_login_password',
   loginSubmit: 'btn_login_submit',
+  googleSignIn: 'btn_google_sign_in',
   guestTrackModeEmail: 'guest_track_mode_email',
   guestTrackModeToken: 'guest_track_mode_token',
   guestEmail: 'field_guest_email',
@@ -36,6 +39,15 @@ export const Selectors = {
   localeEn: 'locale_en',
   localeFa: 'locale_fa',
   productDetail: 'screen_product_detail',
+  checkoutScreen: 'screen_checkout',
+  checkoutPayStripe: 'btn_checkout_pay_stripe',
+  checkoutResultScreen: 'screen_checkout_result',
+  signupScreen: 'screen_signup',
+  signupSubmit: 'btn_signup_submit',
+  profileScreen: 'screen_profile',
+  saveProfile: 'btn_save_profile',
+  myOrdersScreen: 'screen_my_orders',
+  ordersEmpty: 'orders_empty',
   notificationsScreen: 'screen_notifications',
   notificationsMaster: 'toggle_notifications_master',
   notificationsOrders: 'toggle_notifications_orders',
@@ -51,6 +63,7 @@ export const UiText = {
   checkoutGuestDetails: 'Guest details',
   checkoutShippingAddress: 'Delivery address',
   checkoutPayStripe: 'Pay with Stripe',
+  checkoutDone: 'Done',
   signupTitle: 'Create account',
   firstName: 'First name',
   signUp: 'Sign up',

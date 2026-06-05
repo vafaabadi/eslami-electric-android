@@ -1,25 +1,25 @@
-import { byTestTag, dismissSystemDialogs, waitForAppReady } from '../helpers/app';
-import { Selectors } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { HomePage } from '../pages/HomePage';
 
 describe('Home — featured products', () => {
+  let home: HomePage;
+
   before(async () => {
-    await dismissSystemDialogs();
-    await waitForAppReady();
+    await launchFresh();
+    home = new HomePage(browser);
+    await home.open();
   });
 
   it('shows featured section on Home tab', async () => {
-    await (await byTestTag(Selectors.navHome)).click();
-    const featured = await byTestTag(Selectors.homeFeatured, 30_000);
-    await expect(featured).toBeDisplayed();
+    await home.expectFeaturedSectionVisible();
   });
 
   it('lists at least one product with Add to basket', async () => {
-    const addBtn = await byTestTag(Selectors.addToBasket, 30_000);
-    await expect(addBtn).toBeDisplayed();
+    await home.expectAddToBasketVisible();
   });
 
   it('navigates to Products via View all', async () => {
-    await (await byTestTag(Selectors.viewAllProducts)).click();
-    await expect(byTestTag(Selectors.searchProducts)).resolves.toBeDefined();
+    const products = await home.openViewAllProducts();
+    await products.expectCatalogControlsVisible();
   });
 });

@@ -1,18 +1,16 @@
-import { byTestTag, clearBasketIfNeeded, dismissSystemDialogs, tapNav, waitForAppReady } from '../helpers/app';
-import { Selectors } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { BasketPage } from '../pages/BasketPage';
 
 describe('Basket — empty state', () => {
   before(async () => {
-    await dismissSystemDialogs();
-    await waitForAppReady();
-    await clearBasketIfNeeded();
-    await tapNav('navBasket');
+    await launchFresh();
+    const basket = new BasketPage(browser);
+    await basket.clearIfNeeded();
+    await basket.open();
   });
 
   it('shows empty basket message', async () => {
-    const empty = await byTestTag(Selectors.basketEmpty, 10_000);
-    await expect(empty).toBeDisplayed();
-    const text = await empty.getText();
-    expect(text.toLowerCase()).toContain('empty');
+    const basket = new BasketPage(browser);
+    await basket.expectEmptyState();
   });
 });

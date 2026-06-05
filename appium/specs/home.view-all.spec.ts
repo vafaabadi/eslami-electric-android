@@ -1,17 +1,15 @@
-import { byTestTag, dismissSystemDialogs, tapNav, waitForAppReady } from '../helpers/app';
-import { Selectors } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { HomePage } from '../pages/HomePage';
 
-describe('Home — view all navigates to products', () => {
+describe('Home — view all products', () => {
   before(async () => {
-    await dismissSystemDialogs();
-    await waitForAppReady();
-    await tapNav('navHome');
+    await launchFresh();
   });
 
-  it('lands on products tab after tapping View all', async () => {
-    await (await byTestTag(Selectors.viewAllProducts)).click();
-    const search = await byTestTag(Selectors.searchProducts, 15_000);
-    await expect(search).toBeDisplayed();
-    await expect(byTestTag(Selectors.addToBasket, 15_000)).resolves.toBeDefined();
+  it('navigates from Home featured to Products catalog', async () => {
+    const home = new HomePage(browser);
+    await home.open();
+    const products = await home.openViewAllProducts();
+    await products.expectCatalogControlsVisible();
   });
 });

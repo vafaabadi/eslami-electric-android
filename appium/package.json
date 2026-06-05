@@ -8,7 +8,8 @@
     "test:smoke": "wdio run wdio.conf.ts --spec ./specs/smoke.launch.spec.ts",
     "test:ci": "wdio run wdio.conf.ts --spec ./specs/smoke.launch.spec.ts --spec ./specs/home.featured.spec.ts",
     "appium:install-driver": "appium driver install uiautomator2",
-    "appium:doctor": "appium driver doctor uiautomator2"
+    "appium:doctor": "appium driver doctor uiautomator2",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
     "@types/mocha": "^10.0.9",

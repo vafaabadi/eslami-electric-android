@@ -1,4 +1,4 @@
-import { dismissSystemDialogs, waitForAppReady } from '../helpers/app';
+import { launchFresh } from '../helpers/app';
 import {
   assertGuestAccountState,
   assertLoggedInAccountState,
@@ -13,8 +13,7 @@ describe('Account — logout returns to guest state', () => {
       this.skip();
       return;
     }
-    await dismissSystemDialogs();
-    await waitForAppReady();
+    await launchFresh();
     await loginWithEnvCredentials();
   });
 

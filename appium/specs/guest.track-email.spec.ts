@@ -1,38 +1,27 @@
-import { $, driver } from '@wdio/globals';
-import { byTestTag, dismissSystemDialogs, hideKeyboardIfOpen, tapNav, waitForAppReady } from '../helpers/app';
-import { Selectors } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { AccountPage } from '../pages/AccountPage';
 
 describe('Guest — email + order tab validation and ORD auto-switch', () => {
+  let guest: import('../pages/GuestTrackOrderPage').GuestTrackOrderPage;
+
   before(async () => {
-    await dismissSystemDialogs();
-    await waitForAppReady();
-    await tapNav('navAccount');
-    await (await byTestTag(Selectors.guestTrack)).click();
+    await launchFresh();
+    const account = new AccountPage(browser);
+    await account.open();
+    guest = await account.openGuestTrack();
   });
 
   it('shows email and order number fields on email tab', async () => {
-    await expect(byTestTag(Selectors.guestEmail)).resolves.toBeDefined();
-    await expect(byTestTag(Selectors.guestOrderRef)).resolves.toBeDefined();
+    await guest.expectEmailTabVisible();
   });
 
   it('validates empty email lookup submission', async () => {
-    await (await byTestTag(Selectors.guestTrackSubmit)).click();
-    await hideKeyboardIfOpen();
-    const error = await $('android=new UiSelector().textContains("email")');
-    expect(await error.isExisting()).toBe(true);
+    await guest.submitEmptyEmailLookup();
+    await guest.expectEmailValidationError();
   });
 
   it('auto-switches from token tab when ORD- number is submitted', async () => {
-    await (await byTestTag(Selectors.guestTrackModeToken)).click();
-    const tokenField = await byTestTag(Selectors.guestToken);
-    await tokenField.setValue('ORD-ABC123');
-    await (await byTestTag(Selectors.guestTrackSubmit)).click();
-    await driver.pause(600);
-
-    await expect(byTestTag(Selectors.guestOrderRef)).resolves.toBeDefined();
-    await expect(byTestTag(Selectors.guestEmail)).resolves.toBeDefined();
-    const orderRefField = await byTestTag(Selectors.guestOrderRef);
-    const value = await orderRefField.getText();
-    expect(value.toUpperCase()).toContain('ORD-ABC123');
+    await guest.pasteOrderNumberOnTokenTab('ORD-ABC123');
+    await guest.expectSwitchedToEmailTabWithOrderRef('ORD-ABC123');
   });
 });

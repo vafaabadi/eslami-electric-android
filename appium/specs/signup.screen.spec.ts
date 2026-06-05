@@ -1,28 +1,26 @@
-import { byTextContains, dismissSystemDialogs, openSignUpFromLogin, textExists, waitForAppReady } from '../helpers/app';
-import { UiText } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { AccountPage } from '../pages/AccountPage';
 
 describe('Account — sign up screen fields', () => {
+  let signUp: import('../pages/SignUpPage').SignUpPage;
+
   before(async () => {
-    await dismissSystemDialogs();
-    await waitForAppReady();
-    await openSignUpFromLogin();
+    await launchFresh();
+    const account = new AccountPage(browser);
+    await account.open();
+    const login = await account.openLogin();
+    signUp = await login.openSignUp();
   });
 
   it('shows create account title', async () => {
-    expect(await textExists(UiText.signupTitle)).toBe(true);
+    await signUp.expectSignUpFormVisible();
   });
 
   it('shows person and company account type chips', async () => {
-    expect(await textExists('Person')).toBe(true);
-    expect(await textExists('Company')).toBe(true);
+    await signUp.expectAccountTypeChips();
   });
 
   it('shows required signup form fields', async () => {
-    await expect(byTextContains(UiText.firstName)).resolves.toBeDefined();
-    await expect(byTextContains('Surname')).resolves.toBeDefined();
-    await expect(byTextContains('Email')).resolves.toBeDefined();
-    await expect(byTextContains('Address')).resolves.toBeDefined();
-    await expect(byTextContains('Password')).resolves.toBeDefined();
-    await expect(byTextContains(UiText.signUp)).resolves.toBeDefined();
+    await signUp.expectRequiredFields();
   });
 });

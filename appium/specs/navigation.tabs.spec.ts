@@ -1,34 +1,28 @@
-import { byTestTag, dismissSystemDialogs, tapNav, waitForAppReady } from '../helpers/app';
-import { Selectors } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { AccountPage } from '../pages/AccountPage';
+import { BasketPage } from '../pages/BasketPage';
+import { HomePage } from '../pages/HomePage';
+import { ProductsPage } from '../pages/ProductsPage';
 
-describe('Navigation — bottom tab cycle', () => {
+describe('Navigation — bottom tabs', () => {
   before(async () => {
-    await dismissSystemDialogs();
-    await waitForAppReady();
+    await launchFresh();
   });
 
-  it('loads Home tab', async () => {
-    await tapNav('navHome');
-    await expect(byTestTag(Selectors.homeFeatured, 30_000)).resolves.toBeDefined();
-  });
+  it('cycles through all four bottom tabs', async () => {
+    const home = new HomePage(browser);
+    await home.open();
+    await home.expectFeaturedSectionVisible();
 
-  it('loads Products tab', async () => {
-    await tapNav('navProducts');
-    await expect(byTestTag(Selectors.searchProducts, 15_000)).resolves.toBeDefined();
-    await expect(byTestTag(Selectors.addToBasket, 30_000)).resolves.toBeDefined();
-  });
+    const products = new ProductsPage(browser);
+    await products.open();
+    await products.expectCatalogControlsVisible();
 
-  it('loads Basket tab', async () => {
-    await tapNav('navBasket');
-    const emptyOrLine =
-      (await byTestTag(Selectors.basketEmpty, 5_000).then(() => true).catch(() => false)) ||
-      (await byTestTag(Selectors.basketLineItem, 5_000).then(() => true).catch(() => false));
-    expect(emptyOrLine).toBe(true);
-  });
+    const basket = new BasketPage(browser);
+    await basket.open();
 
-  it('loads Account tab', async () => {
-    await tapNav('navAccount');
-    await expect(byTestTag(Selectors.accountLogin)).resolves.toBeDefined();
-    await expect(byTestTag(Selectors.guestTrack)).resolves.toBeDefined();
+    const account = new AccountPage(browser);
+    await account.open();
+    await account.expectGuestState();
   });
 });

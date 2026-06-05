@@ -106,6 +106,7 @@ fun BasketScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 16.dp)
+                .testTag("btn_checkout_proceed")
         ) {
             Text(stringResource(R.string.checkout_proceed))
         }

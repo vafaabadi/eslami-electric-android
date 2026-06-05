@@ -68,6 +68,7 @@ fun AppNavHost(
     deepLinkProductId: String? = null,
     openOrdersFromDeepLink: Boolean = false,
     openBasketFromDeepLink: Boolean = false,
+    deepLinkCheckoutResultRoute: String? = null,
     onDeepLinkConsumed: () -> Unit = {},
     onLocaleChanged: (String) -> Unit = {},
     modifier: Modifier = Modifier
@@ -82,6 +83,14 @@ fun AppNavHost(
     LaunchedEffect(deepLinkGuestToken) {
         val token = deepLinkGuestToken?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
         navController.navigate(CatalogRoutes.guestOrderByToken(token)) {
+            launchSingleTop = true
+        }
+        onDeepLinkConsumed()
+    }
+
+    LaunchedEffect(deepLinkCheckoutResultRoute) {
+        val route = deepLinkCheckoutResultRoute?.takeIf { it.isNotBlank() } ?: return@LaunchedEffect
+        navController.navigate(route) {
             launchSingleTop = true
         }
         onDeepLinkConsumed()

@@ -214,7 +214,9 @@ fun LoginScreen(
             OutlinedButton(
                 onClick = { viewModel.signInWithGoogle() },
                 enabled = state !is AuthFormState.Loading,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_google_sign_in")
             ) {
                 Text(stringResource(R.string.continue_with_google))
             }
@@ -303,7 +305,7 @@ fun SignUpScreen(
     AuthScaffold(
         title = stringResource(R.string.signup_title),
         onBack = onBack,
-        modifier = modifier
+        modifier = modifier.testTag("screen_signup")
     ) {
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
@@ -354,7 +356,9 @@ fun SignUpScreen(
                 viewModel.signup(request, onSignedUp)
             },
             enabled = state !is AuthFormState.Loading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_signup_submit")
         ) {
             Text(stringResource(R.string.action_sign_up))
         }
@@ -467,7 +471,7 @@ fun ProfileScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag("screen_profile"),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -548,7 +552,9 @@ fun ProfileScreen(
                             }
                         },
                         enabled = saveState !is AuthFormState.Loading,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("btn_save_profile")
                     ) {
                         if (saveState is AuthFormState.Loading) {
                             CircularProgressIndicator(modifier = Modifier.height(24.dp))

@@ -1,28 +1,27 @@
-import { byTextContains, dismissSystemDialogs, textExists, waitForAppReady } from '../helpers/app';
-import { hasTestCredentials, loginWithEnvCredentials, openProfileFromAccount } from '../helpers/auth';
-import { UiText } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { hasTestCredentials, loginWithEnvCredentials } from '../helpers/auth';
+import { AccountPage } from '../pages/AccountPage';
 
 describe('Account — profile view and edit fields', () => {
+  let profile: import('../pages/ProfilePage').ProfilePage;
+
   before(async function () {
     if (!hasTestCredentials()) {
       this.skip();
       return;
     }
-    await dismissSystemDialogs();
-    await waitForAppReady();
+    await launchFresh();
     await loginWithEnvCredentials();
-    await openProfileFromAccount();
+    const account = new AccountPage(browser);
+    await account.open();
+    profile = await account.openProfile();
   });
 
   it('shows profile screen title', async () => {
-    expect(await textExists(UiText.profileTitle)).toBe(true);
+    await profile.expectProfileVisible();
   });
 
   it('shows editable profile fields', async () => {
-    await expect(byTextContains(UiText.firstName)).resolves.toBeDefined();
-    await expect(byTextContains('Surname')).resolves.toBeDefined();
-    await expect(byTextContains('Mobile')).resolves.toBeDefined();
-    await expect(byTextContains('Address')).resolves.toBeDefined();
-    await expect(byTextContains(UiText.saveProfile)).resolves.toBeDefined();
+    await profile.expectEditableFields();
   });
 });

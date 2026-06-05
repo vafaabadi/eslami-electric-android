@@ -1,30 +1,27 @@
-import { byTestTag, dismissSystemDialogs, hideKeyboardIfOpen, tapNav, waitForAppReady } from '../helpers/app';
-import { Selectors } from '../helpers/selectors';
+import { launchFresh } from '../helpers/app';
+import { AccountPage } from '../pages/AccountPage';
 
 describe('Guest — track order screen', () => {
+  let guest: import('../pages/GuestTrackOrderPage').GuestTrackOrderPage;
+
   before(async () => {
-    await dismissSystemDialogs();
-    await waitForAppReady();
-    await tapNav('navAccount');
-    await (await byTestTag(Selectors.guestTrack)).click();
+    await launchFresh();
+    const account = new AccountPage(browser);
+    await account.open();
+    guest = await account.openGuestTrack();
   });
 
   it('shows email + order number mode by default', async () => {
-    await expect(byTestTag(Selectors.guestEmail)).resolves.toBeDefined();
-    await expect(byTestTag(Selectors.guestOrderRef)).resolves.toBeDefined();
+    await guest.expectEmailTabVisible();
   });
 
   it('switches to tracking token tab', async () => {
-    await (await byTestTag(Selectors.guestTrackModeToken)).click();
-    await expect(byTestTag(Selectors.guestToken)).resolves.toBeDefined();
-    await (await byTestTag(Selectors.guestTrackModeEmail)).click();
+    await guest.switchToTokenTab();
+    await guest.switchToEmailTab();
   });
 
   it('shows validation when submitting empty email lookup', async () => {
-    await (await byTestTag(Selectors.guestTrackSubmit)).click();
-    await hideKeyboardIfOpen();
-    const error = await $('android=new UiSelector().textContains("email")');
-    const exists = await error.isExisting();
-    expect(exists).toBe(true);
+    await guest.submitEmptyEmailLookup();
+    await guest.expectEmailValidationError();
   });
 });
