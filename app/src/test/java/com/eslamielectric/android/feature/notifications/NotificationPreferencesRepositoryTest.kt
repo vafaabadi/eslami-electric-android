@@ -87,6 +87,38 @@ class NotificationPreferencesRepositoryTest {
         }
     }
 
+    @Test
+    fun load_mapsApiErrorBody() = runTest {
+        coEvery { api.getPushPreferences() } throws httpError(
+            503,
+            """{"error":"Service unavailable","code":"SERVER_ERROR"}"""
+        )
+        try {
+            repository.load()
+            throw AssertionError("Expected ApiException")
+        } catch (e: com.eslamielectric.android.core.network.ApiException) {
+            assertEquals(503, e.httpCode)
+            assertEquals("Service unavailable", e.message)
+            assertEquals("SERVER_ERROR", e.code)
+        }
+    }
+
+    @Test(expected = SessionExpiredException::class)
+    fun setMasterEnabled_throwsWhenLoggedOut() = runTest {
+        every { sessionStore.isLoggedIn() } returns false
+        repository.setMasterEnabled(true)
+    }
+
+    @Test(expected = SessionExpiredException::class)
+    fun setChannels_clearsTokenOn401() = runTest {
+        coEvery { api.updatePushPreferences(any()) } throws httpError(401, """{"error":"expired"}""")
+        try {
+            repository.setChannels(PushChannelPatch(orders = false))
+        } finally {
+            verify { sessionStore.setToken(null) }
+        }
+    }
+
     private fun httpError(code: Int, body: String): HttpException {
         val response = Response.error<String>(
             code,

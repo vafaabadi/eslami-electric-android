@@ -46,6 +46,18 @@ fun resolveSupabaseProperty(name: String): String {
 val supabaseUrl = resolveSupabaseProperty("SUPABASE_URL")
 val supabaseAnonKey = resolveSupabaseProperty("SUPABASE_ANON_KEY")
 
+fun resolveApiBaseUrl(forDebug: Boolean): String {
+    val override = sequenceOf(
+        (project.findProperty("apiBaseUrl") as String?)?.trim(),
+        System.getenv("API_BASE_URL")?.trim()
+    ).firstOrNull { !it.isNullOrBlank() }
+    return when {
+        !override.isNullOrBlank() -> override
+        forDebug -> "http://10.0.2.2:3000"
+        else -> "https://www.eslamielectric.com"
+    }
+}
+
 // CI passes -PversionCode=… (play-internal.yml); local builds use default below.
 val versionCodeOverride = (project.findProperty("versionCode") as String?)?.toIntOrNull()
 
@@ -60,7 +72,7 @@ android {
         versionCode = versionCodeOverride ?: 12
         versionName = "1.0.12"
 
-        buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
+        buildConfigField("String", "API_BASE_URL", buildConfigString(resolveApiBaseUrl(forDebug = false)))
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
         buildConfigField("String", "SUPABASE_ANON_KEY", buildConfigString(supabaseAnonKey))
         buildConfigField("boolean", "FCM_CONFIGURED", hasGoogleServices.toString())
@@ -83,7 +95,7 @@ android {
             buildConfigField(
                 "String",
                 "API_BASE_URL",
-                "\"http://10.0.2.2:3000\""
+                buildConfigString(resolveApiBaseUrl(forDebug = true))
             )
         }
         release {
@@ -98,7 +110,7 @@ android {
             buildConfigField(
                 "String",
                 "API_BASE_URL",
-                "\"https://www.eslamielectric.com\""
+                buildConfigString(resolveApiBaseUrl(forDebug = false))
             )
             if (keystorePropertiesFile.exists()) {
                 signingConfig = signingConfigs.getByName("release")
@@ -247,37 +259,70 @@ tasks.register("jacocoCoreFeatureSummary") {
         }
         val text = htmlIndex.readText()
         val rowRegex = Regex(
-            """<tr>.*?<td id="a\d+"><a href="([^"]+)" class="el_package">([^<]+)</a></td>.*?<td class="bar"[^>]*>.*?<td class="ctr2"[^>]*>(\d+)%</td>""",
+            """<a href="([^"]+)" class="el_package">([^<]+)</a></td><td class="bar"[^>]*>.*?<td class="ctr2"[^>]*>(\d+)%</td>""",
             RegexOption.DOT_MATCHES_ALL
         )
-        var coreInstr = 0
+        val totalRegex = Regex("""Total</td><td class="bar">([\d,]+) of ([\d,]+)""")
+        var coreCovered = 0
         var coreTotal = 0
-        var featureInstr = 0
+        var featureCovered = 0
         var featureTotal = 0
         rowRegex.findAll(text).forEach { match ->
             val pkg = match.groupValues[2]
-            val pct = match.groupValues[3].toIntOrNull() ?: return@forEach
             val detail = reportDir.resolve("html/${match.groupValues[1]}")
             if (!detail.exists()) return@forEach
-            val missed = Regex("""Total</td><td class="bar">(\d+) of (\d+)""").find(detail.readText())
-            val covered = missed?.groupValues?.get(1)?.toIntOrNull() ?: 0
-            val total = missed?.groupValues?.get(2)?.toIntOrNull() ?: 0
-            val instr = if (total > 0) ((total - covered) * pct / 100.0).toInt() else 0
+            val totals = totalRegex.find(detail.readText()) ?: return@forEach
+            fun parseCount(raw: String) = raw.replace(",", "").toIntOrNull()
+            val missed = parseCount(totals.groupValues[1]) ?: return@forEach
+            val total = parseCount(totals.groupValues[2]) ?: return@forEach
+            val covered = (total - missed).coerceAtLeast(0)
             when {
                 pkg.startsWith("com.eslamielectric.android.core") -> {
-                    coreInstr += instr
+                    coreCovered += covered
                     coreTotal += total
                 }
                 pkg.startsWith("com.eslamielectric.android.feature") -> {
-                    featureInstr += instr
+                    featureCovered += covered
                     featureTotal += total
                 }
             }
         }
         fun pct(covered: Int, total: Int) =
             if (total == 0) "n/a" else "${(covered * 100.0 / total).toInt()}%"
+        val corePct = if (coreTotal == 0) 0 else (coreCovered * 100.0 / coreTotal)
+        val featurePct = if (featureTotal == 0) 0 else (featureCovered * 100.0 / featureTotal)
+        val combinedTotal = coreTotal + featureTotal
+        val combinedPct = if (combinedTotal == 0) 0.0 else (coreCovered + featureCovered) * 100.0 / combinedTotal
         logger.lifecycle(
-            "JaCoCo instruction coverage — core/: ${pct(coreInstr, coreTotal)} | feature/: ${pct(featureInstr, featureTotal)}"
+            "JaCoCo instruction coverage — core/: ${pct(coreCovered, coreTotal)} | feature/: ${pct(featureCovered, featureTotal)} | combined: ${combinedPct.toInt()}%"
         )
+        project.extensions.extraProperties.set("jacocoCorePct", corePct)
+        project.extensions.extraProperties.set("jacocoFeaturePct", featurePct)
+        project.extensions.extraProperties.set("jacocoCombinedPct", combinedPct)
+    }
+}
+
+/**
+ * Soft coverage gate: warns below 40% aspirational target; fails only below 20% floor.
+ * Run locally: ./gradlew testDebugUnitTest jacocoTestReport jacocoCoverageGate
+ */
+tasks.register("jacocoCoverageGate") {
+    dependsOn("jacocoCoreFeatureSummary")
+    group = "verification"
+    doLast {
+        val combined = (project.extensions.extraProperties.get("jacocoCombinedPct") as? Double) ?: 0.0
+        val floor = 20
+        val target = 40
+        logger.lifecycle("JaCoCo combined core+feature coverage: ${combined.toInt()}% (floor ${floor}%, target ${target}%)")
+        if (combined < floor) {
+            throw GradleException(
+                "JaCoCo combined core+feature coverage ${combined.toInt()}% is below the ${floor}% floor."
+            )
+        }
+        if (combined < target) {
+            logger.warn(
+                "JaCoCo combined core+feature coverage ${combined.toInt()}% is below the ${target}% aspirational target."
+            )
+        }
     }
 }

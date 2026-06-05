@@ -89,7 +89,7 @@ Configured via `BuildConfig.API_BASE_URL` in `app/build.gradle.kts`:
 | **debug** | `http://10.0.2.2:3000` (Android emulator → host machine `localhost:3000`) |
 | **release** | `https://www.eslamielectric.com` |
 
-Override release/staging in `app/build.gradle.kts` or add product flavors. Physical device debugging: use your machine LAN IP, e.g. `http://192.168.1.10:3000`, and ensure cleartext is allowed (already enabled for debug in `AndroidManifest.xml`).
+Override for CI/emulator smoke: `gradlew assembleDebug -PapiBaseUrl=https://www.eslamielectric.com` or env `API_BASE_URL`. Override release/staging in `app/build.gradle.kts` or add product flavors. Physical device debugging: use your machine LAN IP, e.g. `http://192.168.1.10:3000`, and ensure cleartext is allowed (already enabled for debug in `AndroidManifest.xml`).
 
 **Do not commit** API keys or Stripe secrets; the app only calls your backend over HTTPS (or HTTP in local debug).
 
@@ -225,10 +225,10 @@ Use this before promoting beyond internal testing.
 ```bat
 gradlew.bat assembleDebug
 gradlew.bat bundleRelease
-gradlew.bat testDebugUnitTest jacocoTestReport
+gradlew.bat testDebugUnitTest jacocoTestReport jacocoCoreFeatureSummary jacocoCoverageGate
 ```
 
-Unit test HTML + JaCoCo coverage: `app/build/reports/jacoco/jacocoTestReport/html/index.html`. Appium E2E: see [`appium/README.md`](appium/README.md).
+Unit test HTML + JaCoCo coverage: `app/build/reports/jacoco/jacocoTestReport/html/index.html`. **QA / Appium env vars** (all `TEST_*` tokens): [`appium/README.md` § QA credentials](appium/README.md#qa-credentials--environment-variables). Copy `appium/.env.example` → `appium/.env` for local E2E.
 
 Requires **JDK 17** on `JAVA_HOME`. Signed `bundleRelease` needs `keystore.properties` (see [Release signing](#release-signing)).
 

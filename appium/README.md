@@ -65,7 +65,7 @@ describe('Account — login screen navigation', () => {
 | Layer | Metric | Honest estimate |
 |-------|--------|-----------------|
 | **E2E (this folder)** | Major v1 customer-facing flows exercised | **~95%** (29 of 31 flows — see table below) |
-| **Unit tests (`app/src/test`)** | JaCoCo instruction coverage on `core/` + `feature/` | **~23%** combined today (`feature` ~38%, `core` ~15%); target **40–50%+** |
+| **Unit tests (`app/src/test`)** | JaCoCo instruction coverage on `core/` + `feature/` | Run `jacocoCoreFeatureSummary`; **20% CI floor**, **40% aspirational target** |
 | **Instrumentation (`app/src/androidTest`)** | Smoke only | Package launch / context check |
 
 This is **E2E flow coverage**, not JaCoCo line %.
@@ -146,23 +146,37 @@ npm run test:smoke        # launch smoke only
 npm run typecheck         # tsc --noEmit
 ```
 
-### Environment variables (`.env`)
+### QA credentials & environment variables
 
-| Variable | Purpose |
-|----------|---------|
-| `ANDROID_DEVICE_NAME` | AVD name (default `Pixel_7_API_34`) |
-| `ANDROID_PLATFORM_VERSION` | OS version (default `14`) |
-| `APP_APK_PATH` | Path to debug APK |
-| `TEST_EMAIL` / `TEST_PASSWORD` | Optional — login, orders, edit-pending-order, profile, logout |
-| `TEST_RESET_TOKEN` | Optional — reset password deep-link journey |
-| `TEST_CLAIM_TOKEN` | Optional — full claim-account journey |
-| `TEST_CLAIM_PASSWORD` | Optional — password for claim submit step |
-| `TEST_PENDING_ORDER_ID` | Optional — direct deep link to unpaid order for edit journey |
-| `TEST_GUEST_EMAIL` / `TEST_ORDER_ID` | Optional — guest order lookup (`journey.core-guest-order-track`) |
-| `SEARCH_TERM` | Optional partial product search term (default `a`) |
-| `RUN_PERMISSION_SPEC` | Set `true` to run flaky notification-permission spec |
+Copy `appium/.env.example` → `appium/.env`. **Never commit `.env`** or real tokens.
 
-Authenticated and token-dependent specs skip automatically when credentials/tokens are unset.
+| Variable | Required by | How to obtain |
+|----------|-------------|---------------|
+| `ANDROID_DEVICE_NAME` | All specs | AVD name in Android Studio Device Manager (default `Pixel_7_API_34`) |
+| `ANDROID_PLATFORM_VERSION` | All specs | Emulator API level (default `14`) |
+| `APP_APK_PATH` | All specs | `gradlew assembleDebug` → `app/build/outputs/apk/debug/app-debug.apk` |
+| `APP_REINSTALL` | Optional | `true` to force reinstall before each run |
+| `TEST_EMAIL` | Login, orders, profile, notifications, edit-pending | Dedicated QA account on staging/production |
+| `TEST_PASSWORD` | Same as `TEST_EMAIL` | Password for the QA account |
+| `TEST_GUEST_EMAIL` | `journey.core-guest-order-track` | Email used for a completed guest checkout |
+| `TEST_ORDER_ID` | Guest track lookup | `ORD-…` number from guest order confirmation |
+| `TEST_RESET_TOKEN` | `journey.forgot-reset-password` | Trigger forgot-password → copy `token` from reset email/deep link |
+| `TEST_CLAIM_TOKEN` | `journey.claim-guest-account` | Guest checkout → claim email → copy token from link |
+| `TEST_CLAIM_PASSWORD` | Full claim submit step | New password to set when claiming (min 8 chars) |
+| `TEST_PENDING_ORDER_ID` | `journey.edit-pending-order`, `journey.core-checkout-pending-edit` | UUID of unpaid order for `TEST_EMAIL` (My orders → edit before payment) |
+| `SEARCH_TERM` | `products.search-results` | Partial product name (default `a`) |
+| `RUN_PERMISSION_SPEC` | `permissions.notification` | Set `true` to run flaky OS permission dialog spec |
+| `APPIUM_HOST` / `APPIUM_PORT` | WDIO config | Default `127.0.0.1:4723` |
+
+**Token workflow cheat sheet**
+
+1. **Reset password** — Account → Forgot password → submit `TEST_EMAIL` → open email link → copy `token` query param → set `TEST_RESET_TOKEN`.
+2. **Claim account** — Guest checkout to success → tap Claim → email link → copy token → set `TEST_CLAIM_TOKEN` + `TEST_CLAIM_PASSWORD`.
+3. **Pending order edit** — Login as `TEST_EMAIL` → checkout but cancel Stripe → My orders → copy order UUID → set `TEST_PENDING_ORDER_ID`.
+
+Specs that need credentials **skip gracefully** when vars are unset (no failure).
+
+**CI / production API:** PR smoke builds debug APK with `-PapiBaseUrl=https://www.eslamielectric.com` so catalog journeys work without a local web server. Local debug defaults to `http://10.0.2.2:3000` — run `npm start` in `cursor-my-web-app` first.
 
 ### Deep link helper (`helpers/app.ts`)
 
@@ -268,8 +282,17 @@ Open `app/build/reports/jacoco/jacocoTestReport/html/index.html` for **package-l
 
 ## CI
 
-- **`android-unit-coverage.yml`** — runs unit tests + JaCoCo on every PR
-- **`appium-e2e.yml`** — manual / optional; starts emulator and smoke specs (heavy for free tier)
+| Workflow | Trigger | What it runs |
+|----------|---------|--------------|
+| **`android-unit-coverage.yml`** | PR + push to `main` | `testDebugUnitTest`, JaCoCo, `jacocoCoverageGate` (20% floor), `compileReleaseKotlin` |
+| **`appium-smoke-pr.yml`** | PR to `main` (app/appium paths) | Unit tests + compile + Appium smoke (`smoke.launch`, `navigation.tabs`, `journey.core-catalog-to-basket`) against production API |
+| **`appium-e2e.yml`** | Manual `workflow_dispatch` | Full optional E2E suite on emulator |
+
+**JaCoCo thresholds:** combined `core/` + `feature/` instruction coverage — **20% soft floor** (CI fails below), **40% aspirational target** (warn only). Run locally:
+
+```powershell
+.\gradlew.bat testDebugUnitTest jacocoTestReport jacocoCoreFeatureSummary jacocoCoverageGate
+```
 
 ## Troubleshooting
 

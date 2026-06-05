@@ -1,5 +1,6 @@
 package com.eslamielectric.android.core.data
 
+import androidx.datastore.preferences.core.edit
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -20,8 +21,9 @@ class SessionStoreTest {
     private lateinit var store: SessionStore
 
     @Before
-    fun setUp() {
+    fun setUp() = runTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        context.sessionDataStore.edit { it.clear() }
         store = SessionStore(context)
         store.setToken(null)
     }
@@ -48,5 +50,44 @@ class SessionStoreTest {
         store.applyLocaleHint("fa")
         assertEquals("fa", store.localeFlow.first())
         assertTrue(store.isLocaleInitialized())
+    }
+
+    @Test
+    fun applyLocaleHint_setsEnForNonFaDefault() = runTest {
+        store.applyLocaleHint("en")
+        assertEquals("en", store.localeFlow.first())
+        assertTrue(store.isLocaleInitialized())
+    }
+
+    @Test
+    fun applyLocaleHint_doesNotOverrideUserLocale() = runTest {
+        store.setLocale("en")
+        store.applyLocaleHint("fa")
+        assertEquals("en", store.localeFlow.first())
+    }
+
+    @Test
+    fun localeFlow_defaultsToEn() = runTest {
+        assertEquals("en", store.localeFlow.first())
+        assertFalse(store.isLocaleUserSet())
+        assertFalse(store.isLocaleInitialized())
+    }
+
+    @Test
+    fun tokenFlow_emitsLoginStateChanges() = runTest {
+        assertFalse(store.isLoggedInFlow.first())
+        store.setToken("jwt-live")
+        assertEquals("jwt-live", store.tokenFlow.value)
+        assertTrue(store.isLoggedInFlow.first())
+        store.setToken("  ")
+        assertNull(store.getToken())
+        assertFalse(store.isLoggedInFlow.first())
+    }
+
+    @Test
+    fun setLocale_withoutUserFlagLeavesUserSetFalse() = runTest {
+        store.setLocale("fa", userSet = false)
+        assertEquals("fa", store.localeFlow.first())
+        assertFalse(store.isLocaleUserSet())
     }
 }
