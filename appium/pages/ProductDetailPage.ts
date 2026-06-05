@@ -26,4 +26,14 @@ export class ProductDetailPage extends BasePage {
     await (await this.byTestTag(Selectors.addToBasket, 15_000)).click();
     await this.pause(600);
   }
+
+  async addQuantity(targetQty: number): Promise<void> {
+    if (targetQty > 1) {
+      for (let i = 1; i < targetQty; i++) {
+        await (await this.byTestTag(Selectors.stepperIncrease)).click();
+        await this.pause(400);
+      }
+    }
+    await this.addToBasket();
+  }
 }

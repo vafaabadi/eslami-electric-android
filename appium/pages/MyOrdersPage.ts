@@ -39,4 +39,9 @@ export class MyOrdersPage extends BasePage {
     await this.pause(1200);
     return new OrderDetailPage(this.driver);
   }
+
+  async findEditBeforePaymentOnList(): Promise<boolean> {
+    const editBtn = await this.byTestTagIfExists(Selectors.orderEditBeforePayment, 5_000);
+    return editBtn !== null;
+  }
 }

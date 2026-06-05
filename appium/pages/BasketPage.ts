@@ -75,6 +75,36 @@ export class BasketPage extends BasePage {
     await expect(btn).toBeDisplayed();
   }
 
+  async expectEditPendingBanner(): Promise<void> {
+    const banner = await this.byTestTag(Selectors.editPendingBanner, 15_000);
+    await expect(banner).toBeDisplayed();
+    const text = await banner.getText();
+    expect(text.toLowerCase()).toContain('editing');
+  }
+
+  async expectBasketScreenVisible(): Promise<void> {
+    const screen = await this.byTestTagIfExists(Selectors.screenBasket, 5_000);
+    if (screen) {
+      await expect(screen).toBeDisplayed();
+    }
+  }
+
+  async expectQuantityAtLeast(minQty: number): Promise<void> {
+    const qtyEl = await this.byTestTag(Selectors.stepperQuantity);
+    const qty = Number(await qtyEl.getText());
+    expect(qty).toBeGreaterThanOrEqual(minQty);
+  }
+
+  async setQuantityTo(targetQty: number): Promise<void> {
+    const qtyEl = await this.byTestTag(Selectors.stepperQuantity);
+    let current = Number(await qtyEl.getText());
+    while (current < targetQty) {
+      await (await this.byTestTag(Selectors.stepperIncrease)).click();
+      await this.pause(300);
+      current = Number(await (await this.byTestTag(Selectors.stepperQuantity)).getText());
+    }
+  }
+
   async proceedToCheckout(): Promise<CheckoutPage> {
     const tagged = await this.byTestTagIfExists(Selectors.checkoutProceed, 3_000);
     if (tagged) {

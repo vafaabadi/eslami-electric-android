@@ -4,7 +4,7 @@ End-to-end UI automation for `com.eslamielectric.android` using **Appium 2**, **
 
 ## Page Object Model (POM)
 
-Specs are thin orchestration layers. All selectors and screen interactions live in **constructor-based page classes** under `pages/`. Helpers (`helpers/app.ts`, `helpers/auth.ts`) compose pages for shared flows (launch, login, deep links).
+Specs are thin orchestration layers. All selectors and screen interactions live in **constructor-based page classes** under `pages/`. Helpers (`helpers/app.ts`, `helpers/auth.ts`, `helpers/env.ts`) compose pages for shared flows (launch, login, deep links).
 
 ```
 appium/
@@ -21,6 +21,10 @@ appium/
 │   ├── LoginPage.ts
 │   ├── SignUpPage.ts
 │   ├── ForgotPasswordPage.ts
+│   ├── ResetPasswordPage.ts
+│   ├── ClaimAccountPage.ts
+│   ├── PrivacyPolicyPage.ts
+│   ├── WhatsAppSupportPage.ts
 │   ├── ProfilePage.ts
 │   ├── GuestTrackOrderPage.ts
 │   ├── MyOrdersPage.ts
@@ -29,40 +33,9 @@ appium/
 ├── helpers/
 │   ├── selectors.ts             # testTag constants + UiText fallbacks (pages only)
 │   ├── app.ts                   # launch, deep links, checkout helpers
-│   └── auth.ts                  # login/logout via pages
+│   ├── auth.ts                  # login/logout via pages
+│   └── env.ts                   # optional env token/credential guards
 └── specs/                       # instantiate pages, call methods — no raw selectors
-```
-
-### Architecture
-
-```mermaid
-flowchart TB
-  subgraph specs [specs/*.spec.ts]
-    S[Thin Mocha specs]
-  end
-  subgraph helpers [helpers/]
-    A[app.ts — launch / deep link]
-    AU[auth.ts — credentials]
-    SEL[selectors.ts]
-  end
-  subgraph pages [pages/]
-    BP[BasePage]
-    NAV[NavigationBar]
-    HP[HomePage]
-    PP[ProductsPage]
-    BP --> NAV
-    BP --> HP
-    BP --> PP
-    AP[AccountPage] --> LP[LoginPage]
-    AP --> GP[GuestTrackOrderPage]
-    BK[BasketPage] --> CK[CheckoutPage]
-  end
-  S --> A
-  S --> AU
-  S --> pages
-  A --> pages
-  AU --> pages
-  pages --> SEL
 ```
 
 ### Example spec (POM)
@@ -87,17 +60,17 @@ describe('Account — login screen navigation', () => {
 });
 ```
 
-## What “~90% coverage” means here
+## What “~95% coverage” means here
 
 | Layer | Metric | Honest estimate |
 |-------|--------|-----------------|
-| **E2E (this folder)** | Major v1 customer-facing flows exercised | **~90%** (22 of 24 flows — see table below) |
+| **E2E (this folder)** | Major v1 customer-facing flows exercised | **~95%** (29 of 31 flows — see table below) |
 | **Unit tests (`app/src/test`)** | Line/branch coverage on pure Kotlin utilities | **~35–45%** of `util/` + selected parsers |
 | **Instrumentation (`app/src/androidTest`)** | Smoke only | Package launch / context check |
 
 This is **E2E flow coverage**, not JaCoCo line %.
 
-### v1 flow coverage (E2E) — 22 / 24 (~92%)
+### v1 flow coverage (E2E) — 29 / 31 (~94–96%)
 
 | # | Customer flow | E2E spec(s) | Covered? |
 |---|---------------|-------------|----------|
@@ -107,54 +80,40 @@ This is **E2E flow coverage**, not JaCoCo line %.
 | 4 | Products catalog browse | `products.catalog` | Yes |
 | 5 | Products search / filter grid | `products.search-results` | Yes |
 | 6 | Product detail | `product.detail` | Yes |
-| 7 | Basket add / adjust qty | `basket` | Yes |
-| 8 | Basket empty state | `basket.empty` | Yes |
-| 9 | Guest checkout form (pre-Stripe) | `checkout.guest` | Yes |
-| 10 | Logged-in checkout form (pre-Stripe) | `checkout.logged-in` | Yes* |
-| 11 | Login screen | `account.login` | Yes |
-| 12 | Sign up screen | `signup.screen` | Yes |
-| 13 | Forgot password | `forgot-password` | Yes |
-| 14 | Profile view / edit | `profile.screen` | Yes* |
-| 15 | My orders list | `orders.my-orders` | Yes* |
-| 16 | Order detail | `order.detail` | Yes* |
-| 17 | Guest track order (tabs + validation) | `guest.track-order`, `guest.track-email`, `guest.track-token` | Yes |
-| 18 | Account logout | `account.logout` | Yes* |
-| 19 | Locale EN / FA | `locale.toggle` | Yes |
-| 20 | Notification preferences | `notifications.settings`, `notifications.toggle` | Yes* |
-| 21 | OS notification permission | `permissions.notification` | Optional |
-| 22 | Stripe payment completion | — | **No** — real Stripe WebView/CCT payment not automated |
-| 23 | Checkout success / result screen | `checkout.result.success`, `checkout.stripe-cancel` | Yes |
-| 24 | Google Sign-In | `login.google-button` | **Partial** — button visibility only; OAuth flow not automated |
+| 7 | Product detail → add qty → basket | `product.detail.add-basket`, `journey.product-add-detail` | Yes |
+| 8 | Basket add / adjust qty | `basket` | Yes |
+| 9 | Basket empty state | `basket.empty` | Yes |
+| 10 | Guest basket → checkout form | `checkout.guest`, `journey.basket-to-checkout-guest` | Yes |
+| 11 | Logged-in checkout form (pre-Stripe) | `checkout.logged-in` | Yes* |
+| 12 | Login screen | `account.login` | Yes |
+| 13 | Sign up screen | `signup.screen` | Yes |
+| 14 | Forgot password | `forgot-password`, `journey.forgot-reset-password` | Yes |
+| 15 | Reset password (deep link) | `journey.forgot-reset-password` | Yes* |
+| 16 | Profile view / edit | `profile.screen` | Yes* |
+| 17 | My orders list | `orders.my-orders`, `journey.logged-in-orders` | Yes* |
+| 18 | Order detail | `order.detail`, `journey.logged-in-orders` | Yes* |
+| 19 | Edit pending order → basket → checkout | `journey.edit-pending-order` | Yes* |
+| 20 | Guest track order (tabs + validation) | `guest.track-order`, `guest.track-email`, `guest.track-token` | Yes |
+| 21 | Account logout | `account.logout` | Yes* |
+| 22 | Locale EN / FA | `locale.toggle` | Yes |
+| 23 | Notification preferences | `notifications.settings`, `notifications.toggle` | Yes* |
+| 24 | OS notification permission | `permissions.notification` | Optional |
+| 25 | Stripe payment completion | — | **No** — real Stripe WebView/CCT not automated |
+| 26 | Checkout success / result screen | `checkout.result.success`, `checkout.stripe-cancel`, `journey.checkout-success-claim` | Yes |
+| 27 | Google Sign-In | `login.google-button` | **Partial** — button visibility only |
+| 28 | Privacy policy (Custom Tab) | `journey.privacy-policy` | Yes |
+| 29 | WhatsApp FAB + Account contact | `journey.whatsapp` | Yes |
+| 30 | Claim guest account | `journey.claim-guest-account` | Yes* |
+| 31 | Push deep link routes | `deeplink.push-orders` | Yes |
 
-**22 / 24 flows fully or partially covered (~92%).** Specs marked * skip when `TEST_EMAIL` / `TEST_PASSWORD` are unset.
+**29 / 31 flows fully or partially covered (~94–96%).** Specs marked * skip when required env vars are unset.
 
 #### Uncovered flows (2)
 
 | Flow | Why not automated |
 |------|-------------------|
 | **Stripe payment completion** | Opens external Chrome Custom Tab / Stripe hosted checkout; completing payment requires live cards and is flaky in CI. We assert pre-payment form, Pay button, cancel/back, and result screens via deep link instead. |
-| **Google OAuth sign-in** | Requires Play Services + Supabase OAuth in Custom Tab. We assert **Continue with Google** button visibility (`btn_google_sign_in`) without starting OAuth. |
-
-#### Skipped / N/A
-
-| Item | Notes |
-|------|-------|
-| **Network offline banner** | App has no dedicated offline UI banner in v1 — not testable; no spec added. |
-| **OS notification permission** | `permissions.notification` runs only when `RUN_PERMISSION_SPEC=true` (flaky on emulators). |
-
-### New coverage in this milestone
-
-| Flow | Spec |
-|------|------|
-| Checkout success result (adb deep link) | `checkout.result.success` |
-| Stripe Pay → cancel/back | `checkout.stripe-cancel` |
-| Google button visible | `login.google-button` |
-| Add to basket from product detail | `product.detail.add-basket` |
-| Basket proceed-to-checkout CTA | `basket.proceed-checkout` |
-| My orders empty state | `orders.empty-state` |
-| Guest token tab invalid paste | `guest.track-token` |
-| Notification toggle interaction | `notifications.toggle` |
-| Push deep link → orders | `deeplink.push-orders` |
+| **Google OAuth sign-in** | Requires Play Services + Supabase OAuth in Custom Tab. We assert **Continue with Google** button visibility without starting OAuth. |
 
 ## Prerequisites
 
@@ -178,34 +137,11 @@ cd ..
 .\gradlew.bat assembleDebug
 ```
 
-Create an AVD (example):
-
-```text
-Pixel_7_API_34 — Android 14 (API 34)
-```
-
-Start the emulator, then verify:
-
-```powershell
-adb devices
-```
-
 ## Run tests locally
 
-Terminal 1 — emulator running, web API on port 3000.
-
-Terminal 2 — Appium (optional if using WDIO’s built-in service):
-
 ```powershell
 cd appium
-npx appium
-```
-
-Terminal 3 — tests:
-
-```powershell
-cd appium
-npm test                  # all specs (32 files)
+npm test                  # all specs (41 files)
 npm run test:smoke        # launch smoke only
 npm run typecheck         # tsc --noEmit
 ```
@@ -217,12 +153,27 @@ npm run typecheck         # tsc --noEmit
 | `ANDROID_DEVICE_NAME` | AVD name (default `Pixel_7_API_34`) |
 | `ANDROID_PLATFORM_VERSION` | OS version (default `14`) |
 | `APP_APK_PATH` | Path to debug APK |
-| `TEST_EMAIL` / `TEST_PASSWORD` | Optional — enables login / checkout / profile / orders / logout specs |
-| `TEST_GUEST_EMAIL` / `TEST_ORDER_ID` | Optional — reserved for future guest-order lookup with real data |
+| `TEST_EMAIL` / `TEST_PASSWORD` | Optional — login, orders, edit-pending-order, profile, logout |
+| `TEST_RESET_TOKEN` | Optional — reset password deep-link journey |
+| `TEST_CLAIM_TOKEN` | Optional — full claim-account journey |
+| `TEST_CLAIM_PASSWORD` | Optional — password for claim submit step |
+| `TEST_PENDING_ORDER_ID` | Optional — direct deep link to unpaid order for edit journey |
+| `TEST_GUEST_EMAIL` / `TEST_ORDER_ID` | Optional — guest order lookup |
 | `SEARCH_TERM` | Optional partial product search term (default `a`) |
 | `RUN_PERMISSION_SPEC` | Set `true` to run flaky notification-permission spec |
 
-Authenticated specs skip automatically when credentials are unset.
+Authenticated and token-dependent specs skip automatically when credentials/tokens are unset.
+
+### Deep link helper (`helpers/app.ts`)
+
+```typescript
+// adb shell am start -a android.intent.action.VIEW -d "eslamielectric://…"
+await openAppDeepLink('eslamielectric://push/orders');
+await openResetPasswordDeepLink(process.env.TEST_RESET_TOKEN!);
+await openClaimAccountDeepLink(process.env.TEST_CLAIM_TOKEN!);
+await openOrderDetailDeepLink(process.env.TEST_PENDING_ORDER_ID!);
+await openCheckoutResultDeepLink({ success: true, orderNumber: 'ORD-E2E' });
+```
 
 ## Selectors
 
@@ -232,24 +183,23 @@ Compose screens use `Modifier.testTag("…")` with `semantics { testTagsAsResour
 com.eslamielectric.android:id/<testTag>
 ```
 
-`helpers/selectors.ts` centralises testTags and `UiText` fallbacks. **Pages** consume selectors; **specs must not**.
+### Web-parity testTags
 
-### App testTags added for fragile screens
+| testTag | Screen / action |
+|---------|-----------------|
+| `banner_edit_pending_order` | Basket edit-pending banner |
+| `btn_order_edit_before_payment` | Order list / detail edit CTA |
+| `screen_forgot_password` / `field_forgot_email` / `btn_send_reset_link` | Forgot password |
+| `screen_reset_password` / `btn_reset_password_submit` | Reset password |
+| `screen_claim_account` / `field_claim_token` / `btn_claim_validate` / `btn_claim_account_submit` | Claim account |
+| `btn_claim_account` | Account entry |
+| `btn_privacy_policy` | Privacy policy Custom Tab |
+| `btn_contact_whatsapp` / `fab_whatsapp` | WhatsApp contact |
+| `btn_checkout_claim_account` | Checkout success claim CTA |
 
-| testTag | Screen |
-|---------|--------|
-| `btn_checkout_proceed` | Basket → checkout CTA |
-| `screen_checkout` | Checkout form |
-| `btn_checkout_pay_stripe` | Pay with Stripe |
-| `screen_checkout_result` | Payment result |
-| `btn_google_sign_in` | Login Google button |
-| `screen_signup` / `btn_signup_submit` | Sign up |
-| `screen_profile` / `btn_save_profile` | Profile |
-| `screen_my_orders` / `orders_empty` | My orders |
+## Spec files (41)
 
-Deep link for E2E checkout success: `eslamielectric://checkout-result?success=true&orderNumber=ORD-E2E-TEST&...`
-
-## Spec files (32)
+### Screen specs (32)
 
 | Spec | Coverage |
 |------|----------|
@@ -286,18 +236,26 @@ Deep link for E2E checkout success: `eslamielectric://checkout-result?success=tr
 | `permissions.notification.spec.ts` | Optional OS permission dialog |
 | `deeplink.push-orders.spec.ts` | `eslamielectric://push/orders` deep link |
 
+### Journey specs (9)
+
+| Spec | Journey |
+|------|---------|
+| `journey.edit-pending-order.spec.ts` | Login → pending order → edit before payment → basket banner → checkout form (skip Stripe) |
+| `journey.forgot-reset-password.spec.ts` | Forgot password validation; reset screen via `TEST_RESET_TOKEN` deep link |
+| `journey.privacy-policy.spec.ts` | Account → Privacy policy → verify Custom Tab → back to app |
+| `journey.whatsapp.spec.ts` | Home FAB visible + tap safe; Account WhatsApp button visible + tap safe |
+| `journey.claim-guest-account.spec.ts` | Account claim entry → token validate; optional full claim with `TEST_CLAIM_TOKEN` |
+| `journey.checkout-success-claim.spec.ts` | Checkout success deep link → claim account CTA visible |
+| `journey.basket-to-checkout-guest.spec.ts` | Home → add → basket → proceed → checkout guest fields |
+| `journey.logged-in-orders.spec.ts` | Login → my orders → order detail items |
+| `journey.product-add-detail.spec.ts` | Products → detail → add qty 2 → basket quantity |
+
 ## Unit tests & JaCoCo (Android module)
 
 From repo root:
 
 ```powershell
 .\gradlew.bat testDebugUnitTest jacocoTestReport
-```
-
-HTML report:
-
-```text
-app/build/reports/jacoco/jacocoTestReport/html/index.html
 ```
 
 ## CI
@@ -310,5 +268,5 @@ app/build/reports/jacoco/jacocoTestReport/html/index.html
 - **Empty catalog** — start `npm start` in `cursor-my-web-app` before E2E.
 - **Element not found** — rebuild APK after app `testTag` changes: `gradlew assembleDebug`.
 - **Appium driver** — `npm run appium:doctor`.
-- **Checkout specs** — assert form fields and cancel/back; full Stripe payment is intentionally out of scope.
-- **Deep link specs** — require freshly built debug APK with `checkout-result` intent filter.
+- **Token journeys** — set `TEST_RESET_TOKEN`, `TEST_CLAIM_TOKEN`, or `TEST_PENDING_ORDER_ID` in `.env`; specs skip when unset.
+- **Deep link specs** — require freshly built debug APK with intent filters for `reset-password`, `claim-account`, `checkout-result`, and `push/*`.
