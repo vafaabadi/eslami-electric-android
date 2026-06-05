@@ -131,4 +131,32 @@ class BasketRepositoryTest {
         val reloaded = BasketRepository(context)
         assertEquals(2, reloaded.getItemsOnce().single().quantity)
     }
+
+    @Test
+    fun toCheckoutLineItems_fallsBackWhenFaNameBlank() = runTest {
+        repository.setItems(
+            listOf(
+                BasketItem(id = "a", name = "Bulb", nameFa = "  ", price = 5.0, quantity = 1)
+            )
+        )
+        val fa = repository.toCheckoutLineItems("fa")
+        assertEquals("Bulb", fa.single().name)
+    }
+
+    @Test
+    fun toCheckoutLineItems_usesItemPlaceholderForBlankName() = runTest {
+        repository.setItems(
+            listOf(
+                BasketItem(id = "a", name = "  ", price = 5.0, quantity = 1)
+            )
+        )
+        assertEquals("Item", repository.toCheckoutLineItems("en").single().name)
+    }
+
+    @Test
+    fun clear_removesAllItems() = runTest {
+        repository.addProduct(sampleProduct, categoryId = null)
+        repository.clear()
+        assertTrue(repository.getItemsOnce().isEmpty())
+    }
 }

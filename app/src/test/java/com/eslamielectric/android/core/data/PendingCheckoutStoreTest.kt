@@ -65,4 +65,19 @@ class PendingCheckoutStoreTest {
         store.clearPendingEditOrder()
         assertNull(store.getPendingEditOrder())
     }
+
+    @Test
+    fun clearAll_removesSessionAndPendingOrder() {
+        store.setSessionId("sess_clear")
+        store.setPendingEditOrder("id", "ORD-1", "pickup", null)
+        store.clearAll()
+        assertNull(store.getSessionId())
+        assertNull(store.getPendingEditOrder())
+    }
+
+    @Test
+    fun pendingEditOrder_returnsNullForBlankOrderId() {
+        store.setPendingEditOrder("  ", "ORD-1", "pickup", null)
+        assertNull(store.getPendingEditOrder())
+    }
 }

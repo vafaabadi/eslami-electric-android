@@ -1,0 +1,127 @@
+# PR smoke: unit tests + compile + lightweight Appium against production API.
+# Full Appium suite remains manual via appium-e2e.yml (workflow_dispatch).
+name: PR quality (unit + smoke Appium)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'app/**'
+      - 'appium/**'
+      - 'gradle/**'
+      - 'build.gradle.kts'
+      - 'settings.gradle.kts'
+      - '.github/workflows/appium-smoke-pr.yml'
+      - '.github/workflows/android-unit-coverage.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: pr-quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI_GRADLE_JVMARGS: "-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+  API_BASE_URL: https://www.eslamielectric.com
+
+jobs:
+  unit-and-compile:
+    name: Unit tests + JaCoCo + compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+      ORG_GRADLE_PROJECT_org_gradle_jvmargs: "-Dorg.gradle.jvmargs=-Xmx6144m -XX:MaxMetaspaceSize=1024m -Dfile.encoding=UTF-8"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare Gradle for CI
+        run: |
+          chmod +x gradlew
+          sed -i '/^org.gradle.java.home=/d' gradle.properties
+          if grep -q '^org.gradle.jvmargs=' gradle.properties; then
+            sed -i "s|^org.gradle.jvmargs=.*|org.gradle.jvmargs=${CI_GRADLE_JVMARGS}|" gradle.properties
+          else
+            echo "org.gradle.jvmargs=${CI_GRADLE_JVMARGS}" >> gradle.properties
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
+
+      - name: Generate JaCoCo report + soft coverage gate
+        run: ./gradlew jacocoTestReport jacocoCoverageGate --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
+
+      - name: Compile debug + release Kotlin
+        run: |
+          ./gradlew compileDebugKotlin compileReleaseKotlin --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
+
+      - name: Upload JaCoCo HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-html-report
+          path: app/build/reports/jacoco/jacocoTestReport/html/
+          if-no-files-found: warn
+
+  appium-smoke:
+    name: Appium smoke (production API)
+    needs: unit-and-compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Prepare Gradle
+        run: chmod +x gradlew
+
+      - name: Build debug APK (production API for emulator)
+        run: ./gradlew assembleDebug -PapiBaseUrl=https://www.eslamielectric.com --no-daemon
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: appium/package-lock.json
+
+      - name: Install Appium dependencies
+        working-directory: appium
+        run: |
+          npm ci || npm install
+          npm run appium:install-driver
+
+      - name: Run smoke specs on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          script: |
+            cd appium
+            npm run test:smoke:pr
+
+      - name: Upload WDIO logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-smoke-failure-logs
+          path: appium/reports/
+          if-no-files-found: ignore

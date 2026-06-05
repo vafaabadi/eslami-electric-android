@@ -46,8 +46,8 @@ jobs:
       - name: Run unit tests
         run: ./gradlew testDebugUnitTest --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
 
-      - name: Generate JaCoCo report
-        run: ./gradlew jacocoTestReport --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
+      - name: Generate JaCoCo report + soft coverage gate
+        run: ./gradlew jacocoTestReport jacocoCoverageGate --no-daemon -Dorg.gradle.jvmargs="${{ env.CI_GRADLE_JVMARGS }}"
 
       - name: Upload JaCoCo HTML report
         uses: actions/upload-artifact@v4
