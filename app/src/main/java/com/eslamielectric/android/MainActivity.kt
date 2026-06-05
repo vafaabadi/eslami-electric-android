@@ -20,6 +20,10 @@ class MainActivity : ComponentActivity() {
     private val app get() = application as EslamiElectricApp
 
     private var deepLinkGuestToken by mutableStateOf<String?>(null)
+    private var deepLinkOrderId by mutableStateOf<String?>(null)
+    private var deepLinkProductId by mutableStateOf<String?>(null)
+    private var openOrdersFromDeepLink by mutableStateOf(false)
+    private var openBasketFromDeepLink by mutableStateOf(false)
 
     override fun attachBaseContext(newBase: Context) {
         val locale = LocaleHelper.readLocaleSync(newBase)
@@ -29,6 +33,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         deepLinkGuestToken = parseGuestOrderToken(intent)
+        applyPushDeepLink(intent)
         runCatching { app.authRepository.handleOAuthDeepLink(intent) }
         enableEdgeToEdge()
         setContent {
@@ -40,10 +45,22 @@ class MainActivity : ComponentActivity() {
                     authRepository = app.authRepository,
                     checkoutRepository = app.checkoutRepository,
                     ordersRepository = app.ordersRepository,
+                    notificationPreferencesRepository = app.notificationPreferencesRepository,
                     sessionStore = app.sessionStore,
                     locale = locale,
+                    fcmConfigured = app.pushTokenManager?.isFcmReady() == true,
                     deepLinkGuestToken = deepLinkGuestToken,
-                    onDeepLinkConsumed = { deepLinkGuestToken = null },
+                    deepLinkOrderId = deepLinkOrderId,
+                    deepLinkProductId = deepLinkProductId,
+                    openOrdersFromDeepLink = openOrdersFromDeepLink,
+                    openBasketFromDeepLink = openBasketFromDeepLink,
+                    onDeepLinkConsumed = {
+                        deepLinkGuestToken = null
+                        deepLinkOrderId = null
+                        deepLinkProductId = null
+                        openOrdersFromDeepLink = false
+                        openBasketFromDeepLink = false
+                    },
                     onLocaleChanged = { _ ->
                         recreate()
                     }
@@ -57,6 +74,23 @@ class MainActivity : ComponentActivity() {
         setIntent(intent)
         runCatching { app.authRepository.handleOAuthDeepLink(intent) }
         parseGuestOrderToken(intent)?.let { deepLinkGuestToken = it }
+        applyPushDeepLink(intent)
+    }
+
+    private fun applyPushDeepLink(intent: Intent?) {
+        val data: Uri = intent?.data ?: return
+        if (data.scheme != "eslamielectric" || data.host != "push") return
+        val segs = data.pathSegments
+        if (segs.isEmpty()) return
+        when (segs[0]) {
+            "order" -> {
+                if (segs.size >= 2) deepLinkOrderId = segs[1]
+                else openOrdersFromDeepLink = true
+            }
+            "orders" -> openOrdersFromDeepLink = true
+            "basket" -> openBasketFromDeepLink = true
+            "product" -> if (segs.size >= 2) deepLinkProductId = segs[1]
+        }
     }
 
     companion object {

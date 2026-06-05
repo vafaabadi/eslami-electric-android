@@ -28,10 +28,12 @@ import com.eslamielectric.android.core.data.SessionStore
 import com.eslamielectric.android.feature.auth.AuthRepository
 import com.eslamielectric.android.feature.basket.CheckoutRepository
 import com.eslamielectric.android.feature.catalog.CatalogRepository
+import com.eslamielectric.android.feature.notifications.NotificationPreferencesRepository
 import com.eslamielectric.android.feature.orders.OrdersRepository
 import com.eslamielectric.android.ui.screens.AccountHomeScreen
 import com.eslamielectric.android.ui.screens.GuestTrackScreen
 import com.eslamielectric.android.ui.screens.MyOrdersScreen
+import com.eslamielectric.android.ui.screens.NotificationsScreen
 import com.eslamielectric.android.ui.screens.OrderDetailScreen
 import com.eslamielectric.android.ui.screens.BasketScreen
 import com.eslamielectric.android.ui.screens.CheckoutResultScreen
@@ -52,9 +54,15 @@ fun AppNavHost(
     authRepository: AuthRepository,
     checkoutRepository: CheckoutRepository,
     ordersRepository: OrdersRepository,
+    notificationPreferencesRepository: NotificationPreferencesRepository,
     sessionStore: SessionStore,
     locale: String = "en",
+    fcmConfigured: Boolean = false,
     deepLinkGuestToken: String? = null,
+    deepLinkOrderId: String? = null,
+    deepLinkProductId: String? = null,
+    openOrdersFromDeepLink: Boolean = false,
+    openBasketFromDeepLink: Boolean = false,
     onDeepLinkConsumed: () -> Unit = {},
     onLocaleChanged: (String) -> Unit = {},
     modifier: Modifier = Modifier
@@ -72,6 +80,42 @@ fun AppNavHost(
             launchSingleTop = true
         }
         onDeepLinkConsumed()
+    }
+
+    // Notification taps route here. For order:<id> we open the order detail under Account so the
+    // Back stack lands the user at Account → My orders, which mirrors web behaviour.
+    LaunchedEffect(deepLinkOrderId, deepLinkProductId, openOrdersFromDeepLink, openBasketFromDeepLink) {
+        val orderId = deepLinkOrderId?.takeIf { it.isNotBlank() }
+        val productId = deepLinkProductId?.takeIf { it.isNotBlank() }
+        when {
+            orderId != null -> {
+                navController.navigate("${AppDestinations.Account.route}?openOrder=$orderId") {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                }
+                onDeepLinkConsumed()
+            }
+            openOrdersFromDeepLink -> {
+                navController.navigate("${AppDestinations.Account.route}?openOrders=true") {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                }
+                onDeepLinkConsumed()
+            }
+            openBasketFromDeepLink -> {
+                navController.navigate(AppDestinations.Basket.route) {
+                    popUpTo(navController.graph.findStartDestination().id) { saveState = true }
+                    launchSingleTop = true
+                }
+                onDeepLinkConsumed()
+            }
+            productId != null -> {
+                navController.navigate(CatalogRoutes.productDetail(productId)) {
+                    launchSingleTop = true
+                }
+                onDeepLinkConsumed()
+            }
+        }
     }
 
     val currentRouteBase = currentRoute?.substringBefore('?')?.substringBefore("/{")
@@ -294,7 +338,7 @@ fun AppNavHost(
                 )
             }
             composable(
-                route = "${AppDestinations.Account.route}?openProfile={openProfile}&openLogin={openLogin}",
+                route = "${AppDestinations.Account.route}?openProfile={openProfile}&openLogin={openLogin}&openOrder={openOrder}&openOrders={openOrders}",
                 arguments = listOf(
                     navArgument("openProfile") {
                         type = NavType.BoolType
@@ -303,15 +347,28 @@ fun AppNavHost(
                     navArgument("openLogin") {
                         type = NavType.BoolType
                         defaultValue = false
+                    },
+                    navArgument("openOrder") {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                    navArgument("openOrders") {
+                        type = NavType.BoolType
+                        defaultValue = false
                     }
                 )
             ) { entry ->
                 val openProfile = entry.arguments?.getBoolean("openProfile") ?: false
                 val openLogin = entry.arguments?.getBoolean("openLogin") ?: false
+                val openOrder = entry.arguments?.getString("openOrder")?.takeIf { it.isNotBlank() }
+                val openOrders = entry.arguments?.getBoolean("openOrders") ?: false
                 val accountNav = rememberNavController()
                 val accountStart = when {
                     openLogin -> AccountRoutes.LOGIN
                     openProfile -> AccountRoutes.PROFILE
+                    openOrder != null -> OrderRoutes.orderDetail(openOrder)
+                    openOrders -> AccountRoutes.ORDERS
                     else -> AccountRoutes.HOME
                 }
                 NavHost(
@@ -332,7 +389,20 @@ fun AppNavHost(
                             onSignUp = { accountNav.navigate(AccountRoutes.SIGNUP) },
                             onProfile = { accountNav.navigate(AccountRoutes.PROFILE) },
                             onMyOrders = { accountNav.navigate(AccountRoutes.ORDERS) },
-                            onGuestTrack = { accountNav.navigate(AccountRoutes.GUEST_TRACK) }
+                            onGuestTrack = { accountNav.navigate(AccountRoutes.GUEST_TRACK) },
+                            onNotifications = { accountNav.navigate(AccountRoutes.NOTIFICATIONS) }
+                        )
+                    }
+                    composable(AccountRoutes.NOTIFICATIONS) {
+                        NotificationsScreen(
+                            repository = notificationPreferencesRepository,
+                            fcmConfigured = fcmConfigured,
+                            onBack = { accountNav.popBackStack() },
+                            onSessionExpired = {
+                                accountNav.navigate(AccountRoutes.LOGIN) {
+                                    popUpTo(AccountRoutes.HOME) { inclusive = false }
+                                }
+                            }
                         )
                     }
                     composable(AccountRoutes.ORDERS) {

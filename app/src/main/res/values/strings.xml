@@ -130,4 +130,29 @@
     <string name="products_search_hint">Search products…</string>
     <string name="products_all_categories">All</string>
     <string name="product_detail_title">Product details</string>
+
+    <!-- Notifications -->
+    <string name="notif_channel_orders_name">Order updates</string>
+    <string name="notif_channel_orders_desc">Order paid, shipped, delivered, cancelled, and payment alerts.</string>
+    <string name="notif_channel_promotions_name">Offers and promotions</string>
+    <string name="notif_channel_promotions_desc">Occasional discounts, restocks, and seasonal deals.</string>
+    <string name="notif_channel_account_name">Account</string>
+    <string name="notif_channel_account_desc">Security alerts and important account changes.</string>
+    <string name="notif_channel_general_name">General</string>
+    <string name="notif_channel_general_desc">General announcements and other messages.</string>
+
+    <string name="notifications_settings_title">Notifications</string>
+    <string name="notifications_master">Allow notifications</string>
+    <string name="notifications_master_hint">Master switch for all channels. Turning this off stops every push.</string>
+    <string name="notifications_permission_required">Notifications are disabled in system settings. Open settings to allow them.</string>
+    <string name="notifications_open_system_settings">Open Android settings</string>
+    <string name="notifications_loading_error">Could not load notification preferences.</string>
+    <string name="notifications_save_error">Could not save notification preferences.</string>
+    <string name="notifications_signed_out_hint">Sign in to manage notification preferences.</string>
+    <string name="notifications_fcm_not_configured">Push notifications are not enabled in this build.</string>
+    <string name="action_notifications">Notifications</string>
+    <string name="permission_dialog_title">Stay updated</string>
+    <string name="permission_dialog_message">Allow notifications to get order updates (paid, shipped, delivered).</string>
+    <string name="permission_dialog_allow">Allow</string>
+    <string name="permission_dialog_not_now">Not now</string>
 </resources>

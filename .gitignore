@@ -22,3 +22,8 @@ keystore.properties
 release/
 upload-keystore*
 *.pem
+
+# Firebase — google-services.json contains the project ID + API key for the FCM app and must not
+# be committed. The .example file is committed as a template; copy it to google-services.json and
+# replace the placeholders from Firebase Console → Project settings → General → SDK setup.
+app/google-services.json

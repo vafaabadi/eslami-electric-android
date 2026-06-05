@@ -94,4 +94,17 @@ interface ApiService {
         @Path("sessionId") sessionId: String,
         @Body body: EmptyRequest = EmptyRequest
     ): ConfirmBySessionResponse
+
+    // --- Push notifications (Firebase Cloud Messaging) ---
+    @POST("api/me/push-tokens")
+    suspend fun registerPushToken(@Body body: PushTokenRegisterRequest): PushTokenRegisterResponse
+
+    @retrofit2.http.HTTP(method = "DELETE", path = "api/me/push-tokens", hasBody = true)
+    suspend fun deletePushToken(@Body body: PushTokenDeleteRequest): OkResponse
+
+    @GET("api/me/push-preferences")
+    suspend fun getPushPreferences(): PushPreferencesDto
+
+    @PATCH("api/me/push-preferences")
+    suspend fun updatePushPreferences(@Body body: PushPreferencesPatchRequest): PushPreferencesDto
 }

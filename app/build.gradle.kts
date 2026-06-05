@@ -6,6 +6,15 @@ plugins {
     id("org.jetbrains.kotlin.plugin.serialization")
 }
 
+// google-services.json is gitignored (contains the Firebase project id + API key for the Android app).
+// CI builds without it must still compile — apply the plugin only when the file exists. Without it,
+// FirebaseApp.initializeApp() returns null and the app skips token registration cleanly.
+val googleServicesFile = rootProject.file("app/google-services.json")
+val hasGoogleServices = googleServicesFile.exists()
+if (hasGoogleServices) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 val keystorePropertiesFile = rootProject.file("keystore.properties")
 val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
@@ -45,12 +54,13 @@ android {
         applicationId = "com.eslamielectric.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = versionCodeOverride ?: 11
-        versionName = "1.0.10"
+        versionCode = versionCodeOverride ?: 12
+        versionName = "1.0.11"
 
         buildConfigField("String", "API_BASE_URL", "\"https://www.eslamielectric.com\"")
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
         buildConfigField("String", "SUPABASE_ANON_KEY", buildConfigString(supabaseAnonKey))
+        buildConfigField("boolean", "FCM_CONFIGURED", hasGoogleServices.toString())
     }
 
     signingConfigs {
@@ -152,6 +162,15 @@ dependencies {
     implementation(supabaseBom)
     implementation("io.github.jan-tennert.supabase:gotrue-kt")
     implementation("io.ktor:ktor-client-android:2.3.12")
+
+    // Firebase Cloud Messaging — push notifications. Uses the BoM to keep transitive deps aligned.
+    // FirebaseMessaging is safe to call regardless of google-services.json presence; without it,
+    // FirebaseApp.initializeApp() returns null and FirebaseMessaging.getInstance() throws — handled
+    // defensively in PushTokenManager.
+    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
+    implementation("com.google.firebase:firebase-messaging-ktx")
+    // Task.await() bridge for Firebase Task → coroutine suspend functions.
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

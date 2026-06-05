@@ -11,6 +11,9 @@ import com.eslamielectric.android.core.network.NetworkModule
 import com.eslamielectric.android.feature.auth.AuthRepository
 import com.eslamielectric.android.feature.basket.CheckoutRepository
 import com.eslamielectric.android.feature.catalog.CatalogRepository
+import com.eslamielectric.android.feature.notifications.NotificationChannels
+import com.eslamielectric.android.feature.notifications.NotificationPreferencesRepository
+import com.eslamielectric.android.feature.notifications.PushTokenManager
 import com.eslamielectric.android.feature.orders.OrdersRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,6 +44,13 @@ class EslamiElectricApp : Application(), ImageLoaderFactory {
     lateinit var ordersRepository: OrdersRepository
         private set
 
+    /** Null when google-services.json is missing in the build — see [PushTokenManager]. */
+    var pushTokenManager: PushTokenManager? = null
+        private set
+
+    lateinit var notificationPreferencesRepository: NotificationPreferencesRepository
+        private set
+
     override fun newImageLoader(): ImageLoader {
         val client = OkHttpClient.Builder()
             .connectTimeout(30, TimeUnit.SECONDS)
@@ -69,7 +79,12 @@ class EslamiElectricApp : Application(), ImageLoaderFactory {
         authRepository = AuthRepository(api, sessionStore)
         checkoutRepository = CheckoutRepository(api, basketRepository, sessionStore, pendingCheckoutStore)
         ordersRepository = OrdersRepository(api, sessionStore)
+        notificationPreferencesRepository = NotificationPreferencesRepository(api, sessionStore)
         initializeLocaleHint()
+        // Pre-create FCM channels so background notification messages display correctly.
+        NotificationChannels.ensureCreated(this)
+        // Bind token lifecycle to login/logout/locale changes. Safe even if FCM is not configured.
+        pushTokenManager = PushTokenManager(this, api, sessionStore).also { it.start() }
     }
 
     private fun initializeLocaleHint() {

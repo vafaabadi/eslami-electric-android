@@ -1,7 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <!-- Android 13+: notifications are off until the user grants this at runtime (see PushPermission.kt). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".EslamiElectricApp"
@@ -12,6 +15,21 @@
         android:theme="@android:style/Theme.Material.Light.NoActionBar"
         android:usesCleartextTraffic="false"
         android:networkSecurityConfig="@xml/network_security_config">
+
+        <!-- FCM defaults: monochrome notification icon + accent color. The drawable is a flat
+             vector to satisfy Android's status bar icon requirement (alpha mask only). -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_notification" />
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/notification_accent" />
+        <!-- Pre-create the "general" channel so background notification messages (sent without
+             "android.notification.channel_id") land somewhere sensible on Android 8+. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="general" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -46,6 +64,31 @@
                     android:scheme="eslamielectric"
                     android:host="auth-callback" />
             </intent-filter>
+            <!-- Internal scheme for push notification deep links. Mirrors data["route"] payload
+                 produced by lib/push-notifications.js. Examples:
+                   eslamielectric://push/order/<orderId>
+                   eslamielectric://push/basket
+                   eslamielectric://push/product/<productId>
+                   eslamielectric://push/orders
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="eslamielectric"
+                    android:host="push" />
+            </intent-filter>
         </activity>
+
+        <!-- FCM listener service. Keeps notification settings centralised here. -->
+        <service
+            android:name=".feature.notifications.EslamiFirebaseMessagingService"
+            android:exported="false"
+            tools:ignore="MissingClass">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>
