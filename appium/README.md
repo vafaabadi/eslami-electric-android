@@ -65,7 +65,7 @@ describe('Account — login screen navigation', () => {
 | Layer | Metric | Honest estimate |
 |-------|--------|-----------------|
 | **E2E (this folder)** | Major v1 customer-facing flows exercised | **~95%** (29 of 31 flows — see table below) |
-| **Unit tests (`app/src/test`)** | Line/branch coverage on pure Kotlin utilities | **~35–45%** of `util/` + selected parsers |
+| **Unit tests (`app/src/test`)** | JaCoCo instruction coverage on `core/` + `feature/` | **~23%** combined today (`feature` ~38%, `core` ~15%); target **40–50%+** |
 | **Instrumentation (`app/src/androidTest`)** | Smoke only | Package launch / context check |
 
 This is **E2E flow coverage**, not JaCoCo line %.
@@ -141,7 +141,7 @@ cd ..
 
 ```powershell
 cd appium
-npm test                  # all specs (41 files)
+npm test                  # all specs (47 files)
 npm run test:smoke        # launch smoke only
 npm run typecheck         # tsc --noEmit
 ```
@@ -158,7 +158,7 @@ npm run typecheck         # tsc --noEmit
 | `TEST_CLAIM_TOKEN` | Optional — full claim-account journey |
 | `TEST_CLAIM_PASSWORD` | Optional — password for claim submit step |
 | `TEST_PENDING_ORDER_ID` | Optional — direct deep link to unpaid order for edit journey |
-| `TEST_GUEST_EMAIL` / `TEST_ORDER_ID` | Optional — guest order lookup |
+| `TEST_GUEST_EMAIL` / `TEST_ORDER_ID` | Optional — guest order lookup (`journey.core-guest-order-track`) |
 | `SEARCH_TERM` | Optional partial product search term (default `a`) |
 | `RUN_PERMISSION_SPEC` | Set `true` to run flaky notification-permission spec |
 
@@ -197,7 +197,7 @@ com.eslamielectric.android:id/<testTag>
 | `btn_contact_whatsapp` / `fab_whatsapp` | WhatsApp contact |
 | `btn_checkout_claim_account` | Checkout success claim CTA |
 
-## Spec files (41)
+## Spec files (47)
 
 ### Screen specs (32)
 
@@ -236,10 +236,16 @@ com.eslamielectric.android:id/<testTag>
 | `permissions.notification.spec.ts` | Optional OS permission dialog |
 | `deeplink.push-orders.spec.ts` | `eslamielectric://push/orders` deep link |
 
-### Journey specs (9)
+### Journey specs (15)
 
 | Spec | Journey |
 |------|---------|
+| `journey.core-catalog-to-basket.spec.ts` | Catalog browse → add multiple products → basket total |
+| `journey.core-checkout-pending-edit.spec.ts` | Full edit-pending-order → basket banner → checkout (skip Stripe) |
+| `journey.core-auth-session.spec.ts` | Login → terminate + relaunch → still logged in |
+| `journey.core-guest-order-track.spec.ts` | Guest email + order lookup when `TEST_GUEST_EMAIL` + `TEST_ORDER_ID` set |
+| `journey.core-push-token-register.spec.ts` | Login → notifications screen (FCM may skip on emulator) |
+| `journey.core-locale-basket.spec.ts` | Switch FA → add to basket → labels/total still work |
 | `journey.edit-pending-order.spec.ts` | Login → pending order → edit before payment → basket banner → checkout form (skip Stripe) |
 | `journey.forgot-reset-password.spec.ts` | Forgot password validation; reset screen via `TEST_RESET_TOKEN` deep link |
 | `journey.privacy-policy.spec.ts` | Account → Privacy policy → verify Custom Tab → back to app |
@@ -255,8 +261,10 @@ com.eslamielectric.android:id/<testTag>
 From repo root:
 
 ```powershell
-.\gradlew.bat testDebugUnitTest jacocoTestReport
+.\gradlew.bat testDebugUnitTest jacocoTestReport jacocoCoreFeatureSummary
 ```
+
+Open `app/build/reports/jacoco/jacocoTestReport/html/index.html` for **package-level** instruction coverage. Run `jacocoCoreFeatureSummary` for a quick core/feature rollup. Honest target: **40–50%+** on `com.eslamielectric.android.core` + `.feature` (currently ~23% combined; `feature.basket` ~60%, `feature.orders` ~45%).
 
 ## CI
 

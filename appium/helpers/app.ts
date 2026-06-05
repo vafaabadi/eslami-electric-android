@@ -26,6 +26,15 @@ export async function launchFresh() {
   await waitForAppReady();
 }
 
+/** Kill the app process and cold-start again (session persistence checks). */
+export async function terminateAndRelaunch() {
+  await driver.terminateApp(APP_PACKAGE);
+  await driver.pause(1500);
+  await driver.activateApp(APP_PACKAGE);
+  await dismissSystemDialogs();
+  await waitForAppReady();
+}
+
 export async function openDeepLink(uri: string) {
   await driver.execute('mobile: shell', {
     command: 'am',

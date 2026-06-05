@@ -11,4 +11,15 @@ class PriceFormatTest {
         assertEquals("$0.00", formatPriceUsd(0.0))
         assertEquals("$999.99", formatPriceUsd(999.99))
     }
+
+    @Test
+    fun formatsLargeAmountsWithoutThousandsSeparator() {
+        assertEquals("$1234.56", formatPriceUsd(1234.56))
+    }
+
+    @Test
+    fun padsSingleDigitCents() {
+        assertEquals("$10.05", formatPriceUsd(10.05))
+        assertEquals("$10.50", formatPriceUsd(10.5))
+    }
 }

@@ -44,4 +44,23 @@ class PushPreferencesParsingTest {
         assertTrue(encoded.contains("\"master_enabled\":true"))
         assertTrue(encoded.contains("\"orders\":false"))
     }
+
+    @Test
+    fun parsesDefaultsWhenChannelsOmitted() {
+        val raw = """{"master_enabled":true,"updated_at":null}"""
+        val dto = json.decodeFromString<PushPreferencesDto>(raw)
+        assertTrue(dto.masterEnabled)
+        assertTrue(dto.channels.orders)
+        assertTrue(dto.channels.promotions)
+    }
+
+    @Test
+    fun roundTripsChannelPatch() {
+        val patch = PushChannelPatch(orders = false, account = true)
+        val encoded = json.encodeToString(PushChannelPatch.serializer(), patch)
+        val decoded = json.decodeFromString<PushChannelPatch>(encoded)
+        assertEquals(false, decoded.orders)
+        assertEquals(true, decoded.account)
+        assertEquals(null, decoded.promotions)
+    }
 }

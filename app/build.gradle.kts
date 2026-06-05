@@ -131,6 +131,12 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
     }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {
@@ -180,6 +186,11 @@ dependencies {
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    testImplementation("io.mockk:mockk:1.13.13")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.8.1")
+    testImplementation("org.robolectric:robolectric:4.14.1")
+    testImplementation("androidx.test:core-ktx:1.6.1")
+    testImplementation("androidx.arch.core:core-testing:2.2.0")
     androidTestImplementation("androidx.test.ext:junit:1.2.1")
     androidTestImplementation("androidx.test:runner:1.6.2")
     androidTestImplementation("androidx.test:rules:1.6.2")
@@ -187,6 +198,8 @@ dependencies {
 
 tasks.register<JacocoReport>("jacocoTestReport") {
     dependsOn("testDebugUnitTest")
+    group = "verification"
+    description = "Unit test coverage report (HTML/XML). Package breakdown in HTML index."
 
     reports {
         xml.required.set(true)
@@ -219,4 +232,52 @@ tasks.register<JacocoReport>("jacocoTestReport") {
             include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
         }
     )
+}
+
+/** Prints instruction coverage % for core/ and feature/ packages after jacocoTestReport. */
+tasks.register("jacocoCoreFeatureSummary") {
+    dependsOn("jacocoTestReport")
+    group = "verification"
+    doLast {
+        val reportDir = layout.buildDirectory.dir("reports/jacoco/jacocoTestReport").get().asFile
+        val htmlIndex = reportDir.resolve("html/index.html")
+        if (!htmlIndex.exists()) {
+            logger.lifecycle("JaCoCo HTML report not found at ${htmlIndex.path}")
+            return@doLast
+        }
+        val text = htmlIndex.readText()
+        val rowRegex = Regex(
+            """<tr>.*?<td id="a\d+"><a href="([^"]+)" class="el_package">([^<]+)</a></td>.*?<td class="bar"[^>]*>.*?<td class="ctr2"[^>]*>(\d+)%</td>""",
+            RegexOption.DOT_MATCHES_ALL
+        )
+        var coreInstr = 0
+        var coreTotal = 0
+        var featureInstr = 0
+        var featureTotal = 0
+        rowRegex.findAll(text).forEach { match ->
+            val pkg = match.groupValues[2]
+            val pct = match.groupValues[3].toIntOrNull() ?: return@forEach
+            val detail = reportDir.resolve("html/${match.groupValues[1]}")
+            if (!detail.exists()) return@forEach
+            val missed = Regex("""Total</td><td class="bar">(\d+) of (\d+)""").find(detail.readText())
+            val covered = missed?.groupValues?.get(1)?.toIntOrNull() ?: 0
+            val total = missed?.groupValues?.get(2)?.toIntOrNull() ?: 0
+            val instr = if (total > 0) ((total - covered) * pct / 100.0).toInt() else 0
+            when {
+                pkg.startsWith("com.eslamielectric.android.core") -> {
+                    coreInstr += instr
+                    coreTotal += total
+                }
+                pkg.startsWith("com.eslamielectric.android.feature") -> {
+                    featureInstr += instr
+                    featureTotal += total
+                }
+            }
+        }
+        fun pct(covered: Int, total: Int) =
+            if (total == 0) "n/a" else "${(covered * 100.0 / total).toInt()}%"
+        logger.lifecycle(
+            "JaCoCo instruction coverage — core/: ${pct(coreInstr, coreTotal)} | feature/: ${pct(featureInstr, featureTotal)}"
+        )
+    }
 }
