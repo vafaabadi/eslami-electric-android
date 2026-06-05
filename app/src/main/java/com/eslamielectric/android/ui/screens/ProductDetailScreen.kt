@@ -30,6 +30,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -66,7 +67,7 @@ fun ProductDetailScreen(
     val scope = rememberCoroutineScope()
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag("screen_product_detail"),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.product_detail_title)) },
@@ -182,6 +183,7 @@ private fun ProductDetailContent(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 12.dp)
+                    .testTag("btn_add_to_basket")
             ) {
                 Text(stringResource(R.string.add_to_basket))
             }

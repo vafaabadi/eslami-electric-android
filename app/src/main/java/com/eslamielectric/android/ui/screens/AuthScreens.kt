@@ -42,6 +42,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -102,11 +103,21 @@ fun AccountHomeScreen(
                 style = MaterialTheme.typography.bodyLarge
             )
             Spacer(modifier = Modifier.height(24.dp))
-            OutlinedButton(onClick = onGuestTrack, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = onGuestTrack,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_guest_track")
+            ) {
                 Text(stringResource(R.string.action_guest_track))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            Button(onClick = onLogin, modifier = Modifier.fillMaxWidth()) {
+            Button(
+                onClick = onLogin,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_account_login")
+            ) {
                 Text(stringResource(R.string.action_login))
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -154,7 +165,12 @@ fun AccountHomeScreen(
                 Text(stringResource(R.string.action_profile))
             }
             Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(onClick = onNotifications, modifier = Modifier.fillMaxWidth()) {
+            OutlinedButton(
+                onClick = onNotifications,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_notifications")
+            ) {
                 Text(stringResource(R.string.action_notifications))
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -223,7 +239,9 @@ fun LoginScreen(
             label = { Text(stringResource(R.string.label_email)) },
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("field_login_email")
         )
         Spacer(modifier = Modifier.height(12.dp))
         OutlinedTextField(
@@ -232,7 +250,9 @@ fun LoginScreen(
             label = { Text(stringResource(R.string.label_password)) },
             visualTransformation = PasswordVisualTransformation(),
             singleLine = true,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("field_login_password")
         )
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
             TextButton(onClick = onForgotPassword) {
@@ -243,7 +263,9 @@ fun LoginScreen(
         Button(
             onClick = { viewModel.login(email, password, onLoggedIn) },
             enabled = state !is AuthFormState.Loading,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("btn_login_submit")
         ) {
             Text(stringResource(R.string.action_login))
         }
@@ -610,12 +632,14 @@ private fun LanguageToggle(
             FilterChip(
                 selected = locale == "en",
                 onClick = { onLocaleChange("en") },
-                label = { Text(stringResource(R.string.language_en)) }
+                label = { Text(stringResource(R.string.language_en)) },
+                modifier = Modifier.testTag("locale_en")
             )
             FilterChip(
                 selected = locale == "fa",
                 onClick = { onLocaleChange("fa") },
-                label = { Text(stringResource(R.string.language_fa)) }
+                label = { Text(stringResource(R.string.language_fa)) },
+                modifier = Modifier.testTag("locale_fa")
             )
         }
     }

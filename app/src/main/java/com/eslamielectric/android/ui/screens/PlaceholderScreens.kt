@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.eslamielectric.android.R
@@ -42,7 +43,11 @@ fun BasketScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(stringResource(R.string.placeholder_basket), style = MaterialTheme.typography.bodyLarge)
+            Text(
+                stringResource(R.string.placeholder_basket),
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.testTag("basket_empty")
+            )
         }
         return
     }
@@ -91,7 +96,8 @@ fun BasketScreen(
             )
             Text(
                 text = formatPriceUsd(basketRepository.subtotal(items)),
-                style = MaterialTheme.typography.titleLarge
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.testTag("basket_total")
             )
         }
         Button(

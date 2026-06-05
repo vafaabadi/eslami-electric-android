@@ -4,7 +4,10 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.serialization")
+    jacoco
 }
+
+import org.gradle.testing.jacoco.tasks.JacocoReport
 
 // google-services.json is gitignored (contains the Firebase project id + API key for the Android app).
 // CI builds without it must still compile — apply the plugin only when the file exists. Without it,
@@ -76,6 +79,7 @@ android {
 
     buildTypes {
         debug {
+            enableUnitTestCoverage = true
             buildConfigField(
                 "String",
                 "API_BASE_URL",
@@ -173,4 +177,46 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
+
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+    androidTestImplementation("androidx.test.ext:junit:1.2.1")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("androidx.test:rules:1.6.2")
+}
+
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+
+    val excludes = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/*\$Lambda*.*",
+        "**/*\$inlined*.*",
+        "**/databinding/**",
+        "**/generated/**"
+    )
+
+    val debugTree = fileTree("${layout.buildDirectory.get()}/tmp/kotlin-classes/debug") {
+        exclude(excludes)
+    }
+    val mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(
+        fileTree(layout.buildDirectory.get()) {
+            include("outputs/unit_test_code_coverage/debugUnitTest/testDebugUnitTest.exec")
+        }
+    )
 }

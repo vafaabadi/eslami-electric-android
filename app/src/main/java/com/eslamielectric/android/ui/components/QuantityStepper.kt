@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -65,7 +66,9 @@ fun CompactQuantityStepper(
         IconButton(
             onClick = { if (clamped > minQuantity) onQuantityChange(clamped - 1) },
             enabled = clamped > minQuantity,
-            modifier = Modifier.size(32.dp)
+            modifier = Modifier
+                .size(32.dp)
+                .testTag("stepper_decrease")
         ) {
             Icon(
                 Icons.Default.Remove,
@@ -80,11 +83,13 @@ fun CompactQuantityStepper(
                 .padding(horizontal = 4.dp)
                 .clickable { showEditDialog = true }
                 .padding(horizontal = 8.dp, vertical = 4.dp)
+                .testTag("stepper_quantity")
         )
         IconButton(
             onClick = { if (clamped < maxQuantity) onQuantityChange(clamped + 1) },
             enabled = clamped < maxQuantity,
             modifier = Modifier.size(32.dp)
+                .testTag("stepper_increase")
         ) {
             Icon(
                 Icons.Default.Add,

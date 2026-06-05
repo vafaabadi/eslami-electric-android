@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -77,7 +78,8 @@ fun ProductsScreen(
             onValueChange = { searchQuery = it },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+                .testTag("field_search_products"),
             singleLine = true,
             placeholder = { Text(stringResource(R.string.products_search_hint)) }
         )
@@ -163,9 +165,13 @@ fun HomeScreen(
                         ) {
                             Text(
                                 text = stringResource(R.string.home_featured),
-                                style = MaterialTheme.typography.titleLarge
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.testTag("home_featured_title")
                             )
-                            TextButton(onClick = onViewAllProducts) {
+                            TextButton(
+                                onClick = onViewAllProducts,
+                                modifier = Modifier.testTag("btn_view_all_products")
+                            ) {
                                 Text(stringResource(R.string.view_all_products))
                             }
                         }
@@ -208,7 +214,8 @@ private fun CategoryChipRow(
             FilterChip(
                 selected = selectedCategoryId == null,
                 onClick = { onCategorySelected(null) },
-                label = { Text(stringResource(R.string.products_all_categories)) }
+                label = { Text(stringResource(R.string.products_all_categories)) },
+                modifier = Modifier.testTag("chip_category_all")
             )
         }
         items(categories, key = { it.id }) { category ->
@@ -237,7 +244,8 @@ private fun SortChipRow(
             FilterChip(
                 selected = sortMode == ProductSort.DEFAULT,
                 onClick = { onSortSelected(ProductSort.DEFAULT) },
-                label = { Text(stringResource(R.string.products_sort_default)) }
+                label = { Text(stringResource(R.string.products_sort_default)) },
+                modifier = Modifier.testTag("chip_sort_default")
             )
         }
         item {

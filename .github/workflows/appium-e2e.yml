@@ -1,0 +1,71 @@
+# Manual / optional Appium E2E — emulator startup is slow on free GitHub runners.
+# Prefer local runs (see appium/README.md). Trigger via Actions → Run workflow.
+name: Appium E2E (optional)
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: 'WDIO spec glob (default smoke + home)'
+        required: false
+        default: './specs/smoke.launch.spec.ts,./specs/home.featured.spec.ts'
+
+concurrency:
+  group: appium-e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  appium-smoke:
+    name: Appium smoke on emulator
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: gradle
+
+      - name: Prepare Gradle
+        run: chmod +x gradlew
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: appium/package-lock.json
+
+      - name: Install Appium dependencies
+        working-directory: appium
+        run: |
+          npm ci || npm install
+          npm run appium:install-driver
+
+      - name: Run E2E on emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          target: google_apis
+          arch: x86_64
+          profile: pixel_7
+          disable-animations: true
+          script: |
+            cd appium
+            npm run test:ci
+
+      - name: Upload WDIO logs on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appium-failure-logs
+          path: appium/reports/
+          if-no-files-found: ignore

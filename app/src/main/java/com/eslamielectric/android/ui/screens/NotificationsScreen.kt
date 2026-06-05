@@ -42,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -109,7 +110,8 @@ fun NotificationsScreen(
                 .fillMaxSize()
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(16.dp)
+                .testTag("screen_notifications"),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             if (!fcmConfigured) {
@@ -164,7 +166,8 @@ fun NotificationsScreen(
                         subtitle = stringResource(R.string.notifications_master_hint),
                         checked = prefs.masterEnabled,
                         onChange = viewModel::setMaster,
-                        enabled = true
+                        enabled = true,
+                        testTag = "toggle_notifications_master"
                     )
                     HorizontalDivider()
                     PreferenceRow(
@@ -172,7 +175,8 @@ fun NotificationsScreen(
                         subtitle = stringResource(R.string.notif_channel_orders_desc),
                         checked = prefs.channels.orders && prefs.masterEnabled,
                         onChange = { viewModel.setChannel(NotificationChannels.ORDERS, it) },
-                        enabled = prefs.masterEnabled
+                        enabled = prefs.masterEnabled,
+                        testTag = "toggle_notifications_orders"
                     )
                     PreferenceRow(
                         title = stringResource(R.string.notif_channel_promotions_name),
@@ -208,7 +212,8 @@ private fun PreferenceRow(
     subtitle: String,
     checked: Boolean,
     onChange: (Boolean) -> Unit,
-    enabled: Boolean
+    enabled: Boolean,
+    testTag: String? = null
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -225,7 +230,8 @@ private fun PreferenceRow(
         Switch(
             checked = checked,
             onCheckedChange = onChange,
-            enabled = enabled
+            enabled = enabled,
+            modifier = if (testTag != null) Modifier.testTag(testTag) else Modifier
         )
     }
 }
