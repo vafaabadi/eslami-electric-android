@@ -38,6 +38,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
@@ -126,7 +127,7 @@ fun CheckoutScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag("screen_checkout"),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.checkout_title)) },
@@ -269,7 +270,9 @@ fun CheckoutScreen(
                         addressExtra = addressExtra
                     )
                 },
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_checkout_pay_stripe"),
                 enabled = uiState !is CheckoutUiState.Loading && returnState !is CheckoutReturnUiState.Checking
             ) {
                 if (uiState is CheckoutUiState.Loading) {
@@ -297,7 +300,8 @@ fun CheckoutResultScreen(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .testTag("screen_checkout_result"),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {

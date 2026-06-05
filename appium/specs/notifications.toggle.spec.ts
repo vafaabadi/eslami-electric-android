@@ -2,7 +2,7 @@ import { launchFresh } from '../helpers/app';
 import { hasTestCredentials, loginWithEnvCredentials } from '../helpers/auth';
 import { AccountPage } from '../pages/AccountPage';
 
-describe('Notifications — settings toggles', () => {
+describe('Notifications — toggle interaction', () => {
   before(async function () {
     await launchFresh();
     if (!hasTestCredentials()) {
@@ -12,11 +12,12 @@ describe('Notifications — settings toggles', () => {
     await loginWithEnvCredentials();
   });
 
-  it('opens notifications screen and shows master toggle', async () => {
+  it('toggles master notification preference', async () => {
     const account = new AccountPage(browser);
     await account.open();
     const notifications = await account.openNotifications();
     if (!notifications) return;
+    await notifications.toggleMasterIfPresent();
     await notifications.expectTogglesVisible();
   });
 });

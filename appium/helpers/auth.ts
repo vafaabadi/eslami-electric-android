@@ -1,6 +1,6 @@
-import { $, driver } from '@wdio/globals';
-import { byTestTag, hideKeyboardIfOpen, waitForAppReady } from './app';
-import { Selectors } from './selectors';
+import { AccountPage } from '../pages/AccountPage';
+import { LoginPage } from '../pages/LoginPage';
+import { launchFresh } from './app';
 
 export function hasTestCredentials(): boolean {
   return Boolean(process.env.TEST_EMAIL?.trim() && process.env.TEST_PASSWORD?.trim());
@@ -11,28 +11,36 @@ export async function loginWithEnvCredentials() {
     throw new Error('TEST_EMAIL and TEST_PASSWORD must be set in appium/.env');
   }
 
-  await waitForAppReady();
-  await byTestTag(Selectors.navAccount).then((el) => el.click());
-  await byTestTag(Selectors.accountLogin).then((el) => el.click());
-
-  const email = await byTestTag(Selectors.loginEmail);
-  await email.setValue(process.env.TEST_EMAIL!);
-  const password = await byTestTag(Selectors.loginPassword);
-  await password.setValue(process.env.TEST_PASSWORD!);
-  await hideKeyboardIfOpen();
-  await byTestTag(Selectors.loginSubmit).then((el) => el.click());
-
-  await driver.waitUntil(
-    async () => !(await byTestTag(Selectors.loginSubmit).isDisplayed().catch(() => false)),
-    { timeout: 30_000, timeoutMsg: 'Login did not complete' }
-  );
+  await launchFresh();
+  const account = new AccountPage(browser);
+  await account.open();
+  const login = await account.openLogin();
+  await login.login(process.env.TEST_EMAIL!, process.env.TEST_PASSWORD!);
 }
 
 export async function logoutIfLoggedIn() {
-  await byTestTag(Selectors.navAccount).then((el) => el.click());
-  const logoutText = await $('android=new UiSelector().textContains("Log out")');
-  if (await logoutText.isExisting()) {
-    await logoutText.click();
-    await driver.pause(800);
-  }
+  const account = new AccountPage(browser);
+  await account.logoutIfVisible();
+}
+
+export async function assertGuestAccountState() {
+  const account = new AccountPage(browser);
+  await account.expectGuestState();
+}
+
+export async function assertLoggedInAccountState() {
+  const account = new AccountPage(browser);
+  await account.expectLoggedInState();
+}
+
+export async function openProfileFromAccount() {
+  const account = new AccountPage(browser);
+  await account.open();
+  return account.openProfile();
+}
+
+export async function openLoginPage(): Promise<LoginPage> {
+  const account = new AccountPage(browser);
+  await account.open();
+  return account.openLogin();
 }

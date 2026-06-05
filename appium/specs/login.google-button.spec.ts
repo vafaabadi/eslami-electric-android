@@ -1,15 +1,15 @@
 import { launchFresh } from '../helpers/app';
 import { AccountPage } from '../pages/AccountPage';
 
-describe('Account — locale EN / FA toggle', () => {
+describe('Login — Google sign-in button visible', () => {
   before(async () => {
     await launchFresh();
   });
 
-  it('switches locale chips on Account screen', async () => {
+  it('shows Continue with Google without starting OAuth', async () => {
     const account = new AccountPage(browser);
     await account.open();
-    await account.toggleLocaleFa();
-    await account.toggleLocaleEn();
+    const login = await account.openLogin();
+    await login.expectGoogleSignInVisible();
   });
 });

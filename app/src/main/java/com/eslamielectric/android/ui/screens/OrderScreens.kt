@@ -96,7 +96,7 @@ fun MyOrdersScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag("screen_my_orders"),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.orders_title)) },
@@ -135,7 +135,11 @@ fun MyOrdersScreen(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(stringResource(R.string.orders_empty), style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    stringResource(R.string.orders_empty),
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.testTag("orders_empty")
+                )
             }
 
             is OrdersListUiState.Ready -> LazyColumn(

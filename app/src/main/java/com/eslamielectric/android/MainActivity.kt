@@ -12,6 +12,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.eslamielectric.android.ui.navigation.AppNavHost
+import com.eslamielectric.android.ui.navigation.CheckoutRoutes
 import com.eslamielectric.android.ui.theme.EslamiElectricTheme
 import com.eslamielectric.android.util.LocaleHelper
 
@@ -24,6 +25,7 @@ class MainActivity : ComponentActivity() {
     private var deepLinkProductId by mutableStateOf<String?>(null)
     private var openOrdersFromDeepLink by mutableStateOf(false)
     private var openBasketFromDeepLink by mutableStateOf(false)
+    private var deepLinkCheckoutResultRoute by mutableStateOf<String?>(null)
 
     override fun attachBaseContext(newBase: Context) {
         val locale = LocaleHelper.readLocaleSync(newBase)
@@ -34,6 +36,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         deepLinkGuestToken = parseGuestOrderToken(intent)
         applyPushDeepLink(intent)
+        applyCheckoutResultDeepLink(intent)
         runCatching { app.authRepository.handleOAuthDeepLink(intent) }
         enableEdgeToEdge()
         setContent {
@@ -54,12 +57,14 @@ class MainActivity : ComponentActivity() {
                     deepLinkProductId = deepLinkProductId,
                     openOrdersFromDeepLink = openOrdersFromDeepLink,
                     openBasketFromDeepLink = openBasketFromDeepLink,
+                    deepLinkCheckoutResultRoute = deepLinkCheckoutResultRoute,
                     onDeepLinkConsumed = {
                         deepLinkGuestToken = null
                         deepLinkOrderId = null
                         deepLinkProductId = null
                         openOrdersFromDeepLink = false
                         openBasketFromDeepLink = false
+                        deepLinkCheckoutResultRoute = null
                     },
                     onLocaleChanged = { _ ->
                         recreate()
@@ -75,6 +80,17 @@ class MainActivity : ComponentActivity() {
         runCatching { app.authRepository.handleOAuthDeepLink(intent) }
         parseGuestOrderToken(intent)?.let { deepLinkGuestToken = it }
         applyPushDeepLink(intent)
+        applyCheckoutResultDeepLink(intent)
+    }
+
+    private fun applyCheckoutResultDeepLink(intent: Intent?) {
+        val data: Uri = intent?.data ?: return
+        if (data.scheme != "eslamielectric" || data.host != "checkout-result") return
+        val success = data.getQueryParameter("success")?.toBooleanStrictOrNull() ?: false
+        val orderNumber = data.getQueryParameter("orderNumber")
+        val orderId = data.getQueryParameter("orderId")
+        val guestToken = data.getQueryParameter("guestToken")
+        deepLinkCheckoutResultRoute = CheckoutRoutes.result(success, orderNumber, orderId, guestToken)
     }
 
     private fun applyPushDeepLink(intent: Intent?) {

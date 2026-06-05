@@ -2,21 +2,26 @@ import { launchFresh } from '../helpers/app';
 import { hasTestCredentials, loginWithEnvCredentials } from '../helpers/auth';
 import { AccountPage } from '../pages/AccountPage';
 
-describe('Notifications — settings toggles', () => {
+describe('Account — profile view and edit fields', () => {
+  let profile: import('../pages/ProfilePage').ProfilePage;
+
   before(async function () {
-    await launchFresh();
     if (!hasTestCredentials()) {
       this.skip();
       return;
     }
+    await launchFresh();
     await loginWithEnvCredentials();
-  });
-
-  it('opens notifications screen and shows master toggle', async () => {
     const account = new AccountPage(browser);
     await account.open();
-    const notifications = await account.openNotifications();
-    if (!notifications) return;
-    await notifications.expectTogglesVisible();
+    profile = await account.openProfile();
+  });
+
+  it('shows profile screen title', async () => {
+    await profile.expectProfileVisible();
+  });
+
+  it('shows editable profile fields', async () => {
+    await profile.expectEditableFields();
   });
 });

@@ -1,7 +1,7 @@
 import { launchFresh } from '../helpers/app';
 import { AccountPage } from '../pages/AccountPage';
 
-describe('Guest — track order screen', () => {
+describe('Guest — email + order tab validation and ORD auto-switch', () => {
   let guest: import('../pages/GuestTrackOrderPage').GuestTrackOrderPage;
 
   before(async () => {
@@ -11,17 +11,17 @@ describe('Guest — track order screen', () => {
     guest = await account.openGuestTrack();
   });
 
-  it('shows email + order number mode by default', async () => {
+  it('shows email and order number fields on email tab', async () => {
     await guest.expectEmailTabVisible();
   });
 
-  it('switches to tracking token tab', async () => {
-    await guest.switchToTokenTab();
-    await guest.switchToEmailTab();
-  });
-
-  it('shows validation when submitting empty email lookup', async () => {
+  it('validates empty email lookup submission', async () => {
     await guest.submitEmptyEmailLookup();
     await guest.expectEmailValidationError();
+  });
+
+  it('auto-switches from token tab when ORD- number is submitted', async () => {
+    await guest.pasteOrderNumberOnTokenTab('ORD-ABC123');
+    await guest.expectSwitchedToEmailTabWithOrderRef('ORD-ABC123');
   });
 });
