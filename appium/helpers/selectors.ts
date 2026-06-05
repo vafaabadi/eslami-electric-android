@@ -42,4 +42,32 @@ export const Selectors = {
   notificationsBtn: 'btn_notifications',
 } as const;
 
+/** Visible UI strings (English default locale) when no testTag exists */
+export const UiText = {
+  checkoutProceed: 'Proceed to checkout',
+  checkoutTitle: 'Checkout',
+  checkoutDelivery: 'Delivery',
+  checkoutCollection: 'Collection',
+  checkoutGuestDetails: 'Guest details',
+  checkoutShippingAddress: 'Delivery address',
+  checkoutPayStripe: 'Pay with Stripe',
+  signupTitle: 'Create account',
+  firstName: 'First name',
+  signUp: 'Sign up',
+  forgotPasswordTitle: 'Forgot password',
+  forgotPasswordLink: 'Forgot password?',
+  sendResetLink: 'Send reset link',
+  profileTitle: 'Profile',
+  saveProfile: 'Save profile',
+  myOrders: 'My orders',
+  orderDetailTitle: 'Order details',
+  orderItemsHeading: 'Items',
+  basketEmpty: 'Your basket is empty',
+  basketRemove: 'Remove',
+  logout: 'Log out',
+  accountLogin: 'Sign in',
+  guestTrackOrderRef: 'Order number',
+  searchDefaultTerm: 'a',
+} as const;
+
 export type SelectorKey = keyof typeof Selectors;

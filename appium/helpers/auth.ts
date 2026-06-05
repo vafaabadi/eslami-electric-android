@@ -23,7 +23,14 @@ export async function loginWithEnvCredentials() {
   await byTestTag(Selectors.loginSubmit).then((el) => el.click());
 
   await driver.waitUntil(
-    async () => !(await byTestTag(Selectors.loginSubmit).isDisplayed().catch(() => false)),
+    async () => {
+      try {
+        const submit = await byTestTag(Selectors.loginSubmit, 2_000);
+        return !(await submit.isDisplayed());
+      } catch {
+        return true;
+      }
+    },
     { timeout: 30_000, timeoutMsg: 'Login did not complete' }
   );
 }
@@ -35,4 +42,23 @@ export async function logoutIfLoggedIn() {
     await logoutText.click();
     await driver.pause(800);
   }
+}
+
+export async function assertGuestAccountState() {
+  await byTestTag(Selectors.navAccount).then((el) => el.click());
+  await byTestTag(Selectors.accountLogin, 10_000);
+}
+
+export async function assertLoggedInAccountState() {
+  await byTestTag(Selectors.navAccount).then((el) => el.click());
+  const myOrders = await $('android=new UiSelector().textContains("My orders")');
+  await myOrders.waitForExist({ timeout: 15_000 });
+}
+
+export async function openProfileFromAccount() {
+  await byTestTag(Selectors.navAccount).then((el) => el.click());
+  const profileBtn = await $('android=new UiSelector().textContains("Profile")');
+  await profileBtn.waitForExist({ timeout: 15_000 });
+  await profileBtn.click();
+  await driver.pause(800);
 }
