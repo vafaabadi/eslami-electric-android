@@ -17,3 +17,11 @@ export function hasTestPendingOrderId(): boolean {
 export function hasTestClaimPassword(): boolean {
   return Boolean(process.env.TEST_CLAIM_PASSWORD?.trim());
 }
+
+export function hasTestGuestOrderLookup(): boolean {
+  return Boolean(process.env.TEST_GUEST_EMAIL?.trim() && process.env.TEST_ORDER_ID?.trim());
+}
+
+export function hasTestCredentialsForPush(): boolean {
+  return hasTestCredentials();
+}

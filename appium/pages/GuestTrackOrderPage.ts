@@ -64,4 +64,17 @@ export class GuestTrackOrderPage extends BasePage {
       (await error.isExisting()) || (await notFound.isExisting()) || (await invalid.isExisting());
     expect(hasError).toBe(true);
   }
+
+  async submitEmailLookup(email: string, orderRef: string): Promise<void> {
+    await this.switchToEmailTab();
+    const emailField = await this.byTestTag(Selectors.guestEmail);
+    const orderField = await this.byTestTag(Selectors.guestOrderRef);
+    await emailField.clearValue();
+    await orderField.clearValue();
+    await emailField.setValue(email);
+    await orderField.setValue(orderRef);
+    await this.hideKeyboardIfOpen();
+    await (await this.byTestTag(Selectors.guestTrackSubmit)).click();
+    await this.pause(2000);
+  }
 }

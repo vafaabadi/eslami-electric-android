@@ -40,4 +40,22 @@ class GuestOrderInputTest {
     fun returnsRawTokenWhenNotUrl() {
         assertEquals("plain-token", GuestOrderInput.extractTrackingToken("plain-token"))
     }
+
+    @Test
+    fun normalizeOrderRef_leavesUuidUntouched() {
+        val uuid = "550e8400-e29b-41d4-a716-446655440000"
+        assertEquals(uuid, GuestOrderInput.normalizeOrderRef("  $uuid  "))
+    }
+
+    @Test
+    fun extractTrackingToken_decodesFragmentToken() {
+        val url = "https://example.com/order.html#token=frag%2Btoken"
+        assertEquals("frag+token", GuestOrderInput.extractTrackingToken(url))
+    }
+
+    @Test
+    fun looksLikeOrderNumber_rejectsShortOrdPrefix() {
+        assertFalse(GuestOrderInput.looksLikeOrderNumber("ORD-AB"))
+        assertFalse(GuestOrderInput.looksLikeOrderNumber("ORD-ABCDEFG"))
+    }
 }

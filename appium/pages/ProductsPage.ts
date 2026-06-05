@@ -40,9 +40,26 @@ export class ProductsPage extends BasePage {
   }
 
   async addFirstProductToBasket(): Promise<void> {
+    await this.addProductAtIndex(0);
+  }
+
+  async addProductAtIndex(index: number): Promise<void> {
     await this.byTestTag(Selectors.addToBasket, 30_000);
     const buttons = await this.allByTestTag(Selectors.addToBasket);
-    await buttons[0].click();
+    expect(buttons.length).toBeGreaterThan(index);
+    await buttons[index].click();
+    await this.pause(400);
+  }
+
+  async addMultipleDistinctProducts(count: number): Promise<void> {
+    await this.byTestTag(Selectors.addToBasket, 30_000);
+    const buttons = await this.allByTestTag(Selectors.addToBasket);
+    const toAdd = Math.min(count, buttons.length);
+    expect(toAdd).toBeGreaterThanOrEqual(1);
+    for (let i = 0; i < toAdd; i++) {
+      await buttons[i].click();
+      await this.pause(400);
+    }
   }
 
   async increaseFirstProductQuantity(): Promise<void> {

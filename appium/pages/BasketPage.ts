@@ -68,6 +68,19 @@ export class BasketPage extends BasePage {
     expect(text).toMatch(/\$/);
   }
 
+  async readTotalAmount(): Promise<number> {
+    const total = await this.byTestTag(Selectors.basketTotal);
+    const text = await total.getText();
+    const match = text.replace(/,/g, '').match(/\$?([\d.]+)/);
+    expect(match).toBeTruthy();
+    return Number(match![1]);
+  }
+
+  async expectLineItemCountAtLeast(min: number): Promise<void> {
+    const lines = await this.allByTestTag(Selectors.basketLineItem);
+    expect(lines.length).toBeGreaterThanOrEqual(min);
+  }
+
   async expectProceedToCheckoutVisible(): Promise<void> {
     const btn = await this.byTestTag(Selectors.checkoutProceed, 10_000).catch(async () => {
       return this.byTextContains(UiText.checkoutProceed);
