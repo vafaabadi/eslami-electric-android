@@ -4,7 +4,10 @@ import android.content.Intent
 import com.eslamielectric.android.core.data.SessionStore
 import com.eslamielectric.android.core.network.ApiService
 import com.eslamielectric.android.core.network.AuthTokenRequest
+import com.eslamielectric.android.core.network.ClaimAccountRequest
+import com.eslamielectric.android.core.network.ClaimAccountValidateResponse
 import com.eslamielectric.android.core.network.ForgotPasswordRequest
+import com.eslamielectric.android.core.network.ResetPasswordRequest
 import com.eslamielectric.android.core.network.LoginRequest
 import com.eslamielectric.android.core.network.ProfileDto
 import com.eslamielectric.android.core.network.ProfilePatchRequest
@@ -68,6 +71,45 @@ class AuthRepository(
         try {
             val res = api.forgotPassword(ForgotPasswordRequest(email.trim().lowercase()))
             return res.message
+        } catch (e: HttpException) {
+            throw mapApiException(e)
+        }
+    }
+
+    suspend fun resetPassword(token: String, newPassword: String, confirmPassword: String): String {
+        try {
+            val res = api.resetPassword(
+                ResetPasswordRequest(
+                    token = token.trim(),
+                    newPassword = newPassword,
+                    confirmPassword = confirmPassword
+                )
+            )
+            return res.message
+        } catch (e: HttpException) {
+            throw mapApiException(e)
+        }
+    }
+
+    suspend fun validateClaimToken(token: String): ClaimAccountValidateResponse {
+        try {
+            return api.validateClaimAccount(token.trim())
+        } catch (e: HttpException) {
+            throw mapApiException(e)
+        }
+    }
+
+    suspend fun claimAccount(token: String, password: String, confirmPassword: String): String {
+        try {
+            val res = api.claimAccount(
+                ClaimAccountRequest(
+                    token = token.trim(),
+                    password = password,
+                    confirmPassword = confirmPassword
+                )
+            )
+            sessionStore.setToken(res.token)
+            return res.message ?: "Account claimed. You can now view your orders."
         } catch (e: HttpException) {
             throw mapApiException(e)
         }

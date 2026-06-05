@@ -81,6 +81,7 @@ fun MyOrdersScreen(
     locale: String,
     onBack: () -> Unit,
     onOrderClick: (OrderDto) -> Unit,
+    onEditBeforePayment: ((OrderDto) -> Unit)? = null,
     onSessionExpired: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -151,7 +152,8 @@ fun MyOrdersScreen(
                     OrderListCard(
                         order = order,
                         locale = locale,
-                        onClick = { onOrderClick(order) }
+                        onClick = { onOrderClick(order) },
+                        onEditBeforePayment = onEditBeforePayment
                     )
                 }
             }
@@ -169,7 +171,8 @@ fun MyOrdersScreen(
 private fun OrderListCard(
     order: OrderDto,
     locale: String,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEditBeforePayment: ((OrderDto) -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
@@ -213,6 +216,16 @@ private fun OrderListCard(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+            if (isPendingOrder(order) && onEditBeforePayment != null) {
+                OutlinedButton(
+                    onClick = { onEditBeforePayment(order) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .testTag("btn_order_edit_before_payment")
+                ) {
+                    Text(stringResource(R.string.order_edit_before_payment))
+                }
+            }
         }
     }
 }
@@ -228,6 +241,7 @@ fun OrderDetailScreen(
     onBack: () -> Unit,
     onSessionExpired: () -> Unit,
     onProfileIncomplete: () -> Unit,
+    onEditBeforePayment: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     val viewModel: OrderDetailViewModel = viewModel(
@@ -266,7 +280,7 @@ fun OrderDetailScreen(
     }
 
     Scaffold(
-        modifier = modifier,
+        modifier = modifier.testTag("screen_order_detail"),
         topBar = {
             TopAppBar(
                 title = { Text(stringResource(R.string.order_detail_title)) },
@@ -365,6 +379,17 @@ fun OrderDetailScreen(
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
+                    if (pending && !isGuest && onEditBeforePayment != null) {
+                        OutlinedButton(
+                            onClick = onEditBeforePayment,
+                            enabled = actionState !is OrderActionState.Loading,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .testTag("btn_order_edit_before_payment")
+                        ) {
+                            Text(stringResource(R.string.order_edit_before_payment))
+                        }
+                    }
                     if (pending && canGuestActions) {
                         Button(
                             onClick = { viewModel.resumeCheckout(context, locale) },

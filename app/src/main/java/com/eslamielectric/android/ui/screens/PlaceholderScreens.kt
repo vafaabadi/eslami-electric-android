@@ -9,6 +9,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -31,6 +33,7 @@ fun BasketScreen(
     items: List<BasketItem>,
     basketRepository: BasketRepository,
     onProceedToCheckout: () -> Unit,
+    pendingEditOrderLabel: String? = null,
     modifier: Modifier = Modifier
 ) {
     val scope = rememberCoroutineScope()
@@ -52,7 +55,24 @@ fun BasketScreen(
         return
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize().testTag("screen_basket")) {
+        pendingEditOrderLabel?.let { label ->
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp)
+                    .testTag("banner_edit_pending_order"),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.tertiaryContainer
+                )
+            ) {
+                Text(
+                    text = stringResource(R.string.basket_edit_pending_banner, label),
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
+        }
         LazyColumn(
             modifier = Modifier.weight(1f),
             contentPadding = androidx.compose.foundation.layout.PaddingValues(16.dp),

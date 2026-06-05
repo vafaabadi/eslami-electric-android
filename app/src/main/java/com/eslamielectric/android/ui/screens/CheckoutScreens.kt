@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
@@ -92,6 +93,16 @@ fun CheckoutScreen(
     LaunchedEffect(profile) {
         profile?.address?.takeIf { it.isNotBlank() && addressLine1.isBlank() }?.let {
             addressLine1 = it
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        checkoutRepository.getPendingEditOrder()?.let { pending ->
+            pending.fulfillmentType?.takeIf { it.isNotBlank() }?.let { fulfillment = it }
+            pending.addressLine1?.takeIf { it.isNotBlank() && addressLine1.isBlank() }?.let { addressLine1 = it }
+            pending.addressCity?.takeIf { it.isNotBlank() && addressCity.isBlank() }?.let { addressCity = it }
+            pending.addressPostal?.takeIf { it.isNotBlank() && addressPostal.isBlank() }?.let { addressPostal = it }
+            pending.addressExtra?.takeIf { it.isNotBlank() && addressExtra.isBlank() }?.let { addressExtra = it }
         }
     }
 
@@ -295,6 +306,7 @@ fun CheckoutResultScreen(
     message: String?,
     onDone: () -> Unit,
     onTrackOrder: (() -> Unit)? = null,
+    onClaimAccount: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -335,10 +347,29 @@ fun CheckoutResultScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
+        if (success && onClaimAccount != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.checkout_claim_account_hint),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Spacer(modifier = Modifier.height(24.dp))
         if (success && onTrackOrder != null) {
             Button(onClick = onTrackOrder, modifier = Modifier.fillMaxWidth()) {
                 Text(stringResource(R.string.checkout_track_order))
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+        if (success && onClaimAccount != null) {
+            OutlinedButton(
+                onClick = onClaimAccount,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .testTag("btn_checkout_claim_account")
+            ) {
+                Text(stringResource(R.string.checkout_claim_account))
             }
             Spacer(modifier = Modifier.height(12.dp))
         }

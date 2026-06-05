@@ -70,6 +70,19 @@ data class ResetPasswordRequest(
 data class ResetPasswordResponse(val ok: Boolean, val message: String)
 
 @Serializable
+data class ClaimAccountValidateResponse(val valid: Boolean, val email: String? = null)
+
+@Serializable
+data class ClaimAccountRequest(
+    val token: String,
+    val password: String,
+    val confirmPassword: String? = null
+)
+
+@Serializable
+data class ClaimAccountResponse(val ok: Boolean, val token: String, val message: String? = null)
+
+@Serializable
 data class CategoryDto(
     val id: String,
     val name: String,

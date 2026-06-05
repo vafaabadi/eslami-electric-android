@@ -152,6 +152,130 @@ class ForgotPasswordViewModel(private val authRepository: AuthRepository) : View
     }
 }
 
+class ResetPasswordViewModel(private val authRepository: AuthRepository) : ViewModel() {
+    private val _state = MutableStateFlow<AuthFormState>(AuthFormState.Idle)
+    val state: StateFlow<AuthFormState> = _state.asStateFlow()
+    private val _successMessage = MutableStateFlow<String?>(null)
+    val successMessage: StateFlow<String?> = _successMessage.asStateFlow()
+
+    fun submit(token: String, newPassword: String, confirmPassword: String) {
+        if (token.isBlank()) {
+            _state.value = AuthFormState.Error("Reset link is invalid or missing.")
+            return
+        }
+        if (newPassword.length < 8) {
+            _state.value = AuthFormState.Error("Password must be at least 8 characters.")
+            return
+        }
+        if (newPassword != confirmPassword) {
+            _state.value = AuthFormState.Error("Passwords do not match.")
+            return
+        }
+        viewModelScope.launch {
+            _state.value = AuthFormState.Loading
+            _successMessage.value = null
+            try {
+                val msg = authRepository.resetPassword(token, newPassword, confirmPassword)
+                _successMessage.value = msg
+                _state.value = AuthFormState.Success
+            } catch (e: ApiException) {
+                _state.value = AuthFormState.Error(e.message)
+            } catch (e: Exception) {
+                _state.value = AuthFormState.Error(e.message ?: "Reset failed.")
+            }
+        }
+    }
+
+    fun clearError() {
+        if (_state.value is AuthFormState.Error) _state.value = AuthFormState.Idle
+    }
+}
+
+sealed interface ClaimAccountUiState {
+    data object Idle : ClaimAccountUiState
+    data object Validating : ClaimAccountUiState
+    data class Ready(val maskedEmail: String) : ClaimAccountUiState
+    data class Error(val message: String) : ClaimAccountUiState
+}
+
+class ClaimAccountViewModel(
+    private val authRepository: AuthRepository,
+    initialToken: String
+) : ViewModel() {
+    private val _uiState = MutableStateFlow<ClaimAccountUiState>(ClaimAccountUiState.Idle)
+    val uiState: StateFlow<ClaimAccountUiState> = _uiState.asStateFlow()
+
+    private val _submitState = MutableStateFlow<AuthFormState>(AuthFormState.Idle)
+    val submitState: StateFlow<AuthFormState> = _submitState.asStateFlow()
+
+    var token: String = initialToken.trim()
+        private set
+
+    init {
+        if (token.isNotBlank()) validateToken()
+    }
+
+    fun updateToken(value: String) {
+        token = value.trim()
+        if (_uiState.value is ClaimAccountUiState.Error) {
+            _uiState.value = ClaimAccountUiState.Idle
+        }
+    }
+
+    fun validateToken() {
+        if (token.isBlank()) {
+            _uiState.value = ClaimAccountUiState.Error("Paste the claim link token from your order email.")
+            return
+        }
+        viewModelScope.launch {
+            _uiState.value = ClaimAccountUiState.Validating
+            try {
+                val res = authRepository.validateClaimToken(token)
+                if (res.valid) {
+                    _uiState.value = ClaimAccountUiState.Ready(res.email.orEmpty())
+                } else {
+                    _uiState.value = ClaimAccountUiState.Error("Invalid or expired link.")
+                }
+            } catch (e: ApiException) {
+                _uiState.value = ClaimAccountUiState.Error(e.message)
+            } catch (e: Exception) {
+                _uiState.value = ClaimAccountUiState.Error(e.message ?: "Could not validate link.")
+            }
+        }
+    }
+
+    fun claim(password: String, confirmPassword: String, onSuccess: () -> Unit) {
+        if (token.isBlank()) {
+            _submitState.value = AuthFormState.Error("Claim link token is required.")
+            return
+        }
+        if (password.length < 8) {
+            _submitState.value = AuthFormState.Error("Password must be at least 8 characters.")
+            return
+        }
+        if (password != confirmPassword) {
+            _submitState.value = AuthFormState.Error("Passwords do not match.")
+            return
+        }
+        viewModelScope.launch {
+            _submitState.value = AuthFormState.Loading
+            try {
+                authRepository.claimAccount(token, password, confirmPassword)
+                _submitState.value = AuthFormState.Success
+                onSuccess()
+            } catch (e: ApiException) {
+                _submitState.value = AuthFormState.Error(e.message)
+            } catch (e: Exception) {
+                _submitState.value = AuthFormState.Error(e.message ?: "Could not create account.")
+            }
+        }
+    }
+
+    fun clearSubmitError() {
+        if (_submitState.value is AuthFormState.Error) _submitState.value = AuthFormState.Idle
+    }
+}
+
 sealed interface ProfileUiState {
     data object Loading : ProfileUiState
     data class Ready(val profile: ProfileDto) : ProfileUiState
@@ -266,3 +390,19 @@ fun authViewModelFactory(authRepository: AuthRepository): ViewModelProvider.Fact
             else -> throw IllegalArgumentException("Unknown ViewModel: ${modelClass.name}")
         }
     }
+
+fun resetPasswordViewModelFactory(authRepository: AuthRepository): ViewModelProvider.Factory =
+    object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T =
+            ResetPasswordViewModel(authRepository) as T
+    }
+
+fun claimAccountViewModelFactory(
+    authRepository: AuthRepository,
+    initialToken: String
+): ViewModelProvider.Factory = object : ViewModelProvider.Factory {
+    @Suppress("UNCHECKED_CAST")
+    override fun <T : ViewModel> create(modelClass: Class<T>): T =
+        ClaimAccountViewModel(authRepository, initialToken) as T
+}

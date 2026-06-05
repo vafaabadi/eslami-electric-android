@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
+import com.eslamielectric.android.core.network.BasketDraftItemDto
 import com.eslamielectric.android.core.network.CheckoutLineItemRequest
 import com.eslamielectric.android.core.network.ProductDto
 import com.eslamielectric.android.util.resolveProductImageUrl
@@ -56,6 +57,21 @@ class BasketRepository(private val context: Context) {
     suspend fun getItemsOnce(): List<BasketItem> = itemsFlow.first()
 
     suspend fun clear() = setItems(emptyList())
+
+    suspend fun loadFromDraft(draftItems: List<BasketDraftItemDto>) {
+        val items = draftItems.map { item ->
+            BasketItem(
+                id = item.id?.takeIf { it.isNotBlank() } ?: "draft-${item.name.hashCode()}",
+                categoryId = item.categoryId,
+                name = item.name,
+                nameFa = item.nameFa,
+                imageUrl = resolveProductImageUrl(item.imageUrl),
+                price = item.price,
+                quantity = item.quantity.coerceAtLeast(1)
+            )
+        }
+        setItems(items)
+    }
 
     suspend fun updateQuantity(productId: String, quantity: Int) {
         if (quantity <= 0) {

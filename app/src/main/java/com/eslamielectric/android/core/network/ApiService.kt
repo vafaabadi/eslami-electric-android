@@ -37,6 +37,12 @@ interface ApiService {
     @POST("api/reset-password")
     suspend fun resetPassword(@Body body: ResetPasswordRequest): ResetPasswordResponse
 
+    @GET("api/claim-account/{token}")
+    suspend fun validateClaimAccount(@Path("token") token: String): ClaimAccountValidateResponse
+
+    @POST("api/claim-account")
+    suspend fun claimAccount(@Body body: ClaimAccountRequest): ClaimAccountResponse
+
     @GET("api/me")
     suspend fun getMe(): ProfileDto
 
