@@ -5,6 +5,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.PATCH
 import retrofit2.http.POST
+import retrofit2.http.PUT
 import retrofit2.http.Path
 import retrofit2.http.Query
 
@@ -113,4 +114,14 @@ interface ApiService {
 
     @PATCH("api/me/push-preferences")
     suspend fun updatePushPreferences(@Body body: PushPreferencesPatchRequest): PushPreferencesDto
+
+    // --- Basket activity sync (v2 abandoned-basket reminders) ---
+    @PUT("api/me/basket-activity")
+    suspend fun syncBasketActivity(@Body body: BasketActivityRequest): BasketActivityResponse
+
+    @PUT("api/basket-activity")
+    suspend fun syncGuestBasketActivity(
+        @Header("X-Basket-Session") sessionId: String,
+        @Body body: BasketActivityRequest
+    ): BasketActivityResponse
 }

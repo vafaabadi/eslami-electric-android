@@ -4,6 +4,7 @@ import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import com.eslamielectric.android.core.analytics.AnalyticsLogger
+import com.eslamielectric.android.core.data.BasketActivitySync
 import com.eslamielectric.android.core.data.BasketRepository
 import com.eslamielectric.android.core.data.PendingCheckoutStore
 import com.eslamielectric.android.core.data.SessionStore
@@ -95,6 +96,7 @@ class EslamiElectricApp : Application(), ImageLoaderFactory {
         NotificationChannels.ensureCreated(this)
         // Bind token lifecycle to login/logout/locale changes. Safe even if FCM is not configured.
         pushTokenManager = PushTokenManager(this, api, sessionStore).also { it.start() }
+        BasketActivitySync(this, api, sessionStore, basketRepository).start()
     }
 
     private fun initializeLocaleHint() {

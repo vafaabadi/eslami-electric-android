@@ -350,7 +350,7 @@ In the web repo (`cursor-my-web-app`):
    FIREBASE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"…",…}
    ```
    Or set `FIREBASE_SERVICE_ACCOUNT_JSON_BASE64=<base64>` if Vercel multi-line is awkward.
-3. Run the new Supabase migration once: `supabase/migrations/019_push_tokens_and_preferences.sql` (SQL Editor or `supabase db push`).
+3. Run Supabase migrations: `019_push_tokens_and_preferences.sql`, `020_basket_activity.sql`, `021_push_broadcast_log.sql` (SQL Editor or `supabase db push`).
 
 Without the service account, the API still accepts token registration; sends are skipped silently. The Android app remains usable.
 
@@ -379,10 +379,19 @@ gradlew.bat assembleDebug
 |---------|------------|-----------------|
 | `orders` | Order paid, processing, shipped, delivered, cancelled, payment_failed | `eslamielectric://push/order/<orderId>` → Account → Order detail |
 | `account` | Reserved for future security/profile alerts | Account |
-| `promotions` | Reserved for v2 promo broadcasts | Home / product (configurable) |
+| `promotions` | Admin broadcast (`POST /api/admin/push/broadcast`), abandoned-basket reminders (24h cron) | `eslamielectric://push/basket` → Basket tab |
 | `general` | Catch-all | App home |
 
 User preferences (master + per channel) live at `GET/PATCH /api/me/push-preferences` and surface in **Account → Notifications**.
+
+### 6. Basket activity sync (v2)
+
+[`BasketActivitySync`](app/src/main/java/com/eslamielectric/android/core/data/BasketActivitySync.kt) debounces basket changes (2s) and syncs snapshots to the API:
+
+- **Logged in:** `PUT /api/me/basket-activity` (Bearer JWT from `SessionStore`)
+- **Guest:** stable `basket_session_id` in DataStore → `PUT /api/basket-activity` with `X-Basket-Session` header
+
+Only logged-in users with FCM tokens receive abandoned-basket pushes (promotions channel). Guests sync for server-side tracking only.
 
 ## Firebase Analytics
 
