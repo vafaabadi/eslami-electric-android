@@ -3,9 +3,11 @@ package com.eslamielectric.android
 import android.app.Application
 import coil.ImageLoader
 import coil.ImageLoaderFactory
+import com.eslamielectric.android.core.analytics.AnalyticsLogger
 import com.eslamielectric.android.core.data.BasketRepository
 import com.eslamielectric.android.core.data.PendingCheckoutStore
 import com.eslamielectric.android.core.data.SessionStore
+import com.eslamielectric.android.core.review.ReviewPromptManager
 import com.eslamielectric.android.core.network.ApiService
 import com.eslamielectric.android.core.network.NetworkModule
 import com.eslamielectric.android.feature.auth.AuthRepository
@@ -48,6 +50,12 @@ class EslamiElectricApp : Application(), ImageLoaderFactory {
     var pushTokenManager: PushTokenManager? = null
         private set
 
+    lateinit var analyticsLogger: AnalyticsLogger
+        private set
+
+    lateinit var reviewPromptManager: ReviewPromptManager
+        private set
+
     lateinit var notificationPreferencesRepository: NotificationPreferencesRepository
         private set
 
@@ -80,6 +88,8 @@ class EslamiElectricApp : Application(), ImageLoaderFactory {
         checkoutRepository = CheckoutRepository(api, basketRepository, sessionStore, pendingCheckoutStore)
         ordersRepository = OrdersRepository(api, sessionStore)
         notificationPreferencesRepository = NotificationPreferencesRepository(api, sessionStore)
+        analyticsLogger = AnalyticsLogger(this)
+        reviewPromptManager = ReviewPromptManager(this)
         initializeLocaleHint()
         // Pre-create FCM channels so background notification messages display correctly.
         NotificationChannels.ensureCreated(this)

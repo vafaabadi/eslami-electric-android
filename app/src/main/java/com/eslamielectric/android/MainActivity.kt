@@ -56,6 +56,8 @@ class MainActivity : ComponentActivity() {
                     sessionStore = app.sessionStore,
                     locale = locale,
                     fcmConfigured = app.pushTokenManager?.isFcmReady() == true,
+                    analyticsLogger = app.analyticsLogger,
+                    reviewPromptManager = app.reviewPromptManager,
                     deepLinkGuestToken = deepLinkGuestToken,
                     deepLinkOrderId = deepLinkOrderId,
                     deepLinkProductId = deepLinkProductId,

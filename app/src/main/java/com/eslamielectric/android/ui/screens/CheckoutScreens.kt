@@ -47,6 +47,8 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eslamielectric.android.R
+import com.eslamielectric.android.core.analytics.AnalyticsEvents
+import com.eslamielectric.android.core.analytics.AnalyticsLogger
 import com.eslamielectric.android.core.data.BasketRepository
 import com.eslamielectric.android.core.network.OrderDto
 import com.eslamielectric.android.feature.auth.AuthRepository
@@ -64,6 +66,7 @@ fun CheckoutScreen(
     checkoutRepository: CheckoutRepository,
     authRepository: AuthRepository,
     basketRepository: BasketRepository,
+    analyticsLogger: AnalyticsLogger,
     locale: String,
     onBack: () -> Unit,
     onSessionExpired: () -> Unit,
@@ -268,6 +271,7 @@ fun CheckoutScreen(
             Button(
                 onClick = {
                     viewModel.clearError()
+                    analyticsLogger.logEvent(AnalyticsEvents.CHECKOUT_STARTED)
                     viewModel.pay(
                         context = context,
                         fulfillmentType = fulfillment,

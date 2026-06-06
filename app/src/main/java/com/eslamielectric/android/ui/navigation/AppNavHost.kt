@@ -1,5 +1,6 @@
 package com.eslamielectric.android.ui.navigation
 
+import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Chat
@@ -31,8 +32,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.testTagsAsResourceId
+import com.eslamielectric.android.core.analytics.AnalyticsEvents
+import com.eslamielectric.android.core.analytics.AnalyticsLogger
 import com.eslamielectric.android.core.data.BasketRepository
 import com.eslamielectric.android.core.data.SessionStore
+import com.eslamielectric.android.core.review.ReviewPromptManager
 import com.eslamielectric.android.feature.auth.AuthRepository
 import com.eslamielectric.android.feature.basket.CheckoutException
 import com.eslamielectric.android.feature.basket.CheckoutRepository
@@ -72,6 +76,8 @@ fun AppNavHost(
     sessionStore: SessionStore,
     locale: String = "en",
     fcmConfigured: Boolean = false,
+    analyticsLogger: AnalyticsLogger,
+    reviewPromptManager: ReviewPromptManager,
     deepLinkGuestToken: String? = null,
     deepLinkOrderId: String? = null,
     deepLinkProductId: String? = null,
@@ -202,6 +208,14 @@ fun AppNavHost(
 
     val currentRouteBase = currentRoute?.substringBefore('?')?.substringBefore("/{")
     val showBottomBar = currentRouteBase in AppDestinations.bottomNav.map { it.route }
+
+    LaunchedEffect(currentRouteBase) {
+        when (currentRouteBase) {
+            AppDestinations.Home.route -> analyticsLogger.logScreen(AnalyticsEvents.SCREEN_HOME)
+            AppDestinations.Products.route -> analyticsLogger.logScreen(AnalyticsEvents.SCREEN_PRODUCTS)
+            AppDestinations.Basket.route -> analyticsLogger.logScreen(AnalyticsEvents.SCREEN_BASKET)
+        }
+    }
 
     Scaffold(
         modifier = modifier.semantics { testTagsAsResourceId = true },
@@ -349,6 +363,7 @@ fun AppNavHost(
                     checkoutRepository = checkoutRepository,
                     authRepository = authRepository,
                     basketRepository = basketRepository,
+                    analyticsLogger = analyticsLogger,
                     locale = locale,
                     onBack = { navController.popBackStack() },
                     onSessionExpired = {
@@ -402,6 +417,21 @@ fun AppNavHost(
                 val guestToken = entry.arguments?.getString("guestToken")?.takeIf { it != "-" }
                 val canTrackGuestOrder = success && !orderId.isNullOrBlank() && !guestToken.isNullOrBlank()
                 val canClaimAccount = success && canTrackGuestOrder && !authRepository.isLoggedIn()
+                LaunchedEffect(success, orderId) {
+                    if (!success) return@LaunchedEffect
+                    analyticsLogger.logEvent(
+                        AnalyticsEvents.ORDER_COMPLETED,
+                        buildMap {
+                            orderNumber?.let { put("order_number", it) }
+                            orderId?.let { put("order_id", it) }
+                        }
+                    )
+                    val activity = context as? ComponentActivity ?: return@LaunchedEffect
+                    reviewPromptManager.onCheckoutSuccess(
+                        activity,
+                        orderId = orderId ?: orderNumber
+                    )
+                }
                 CheckoutResultScreen(
                     success = success,
                     order = if (orderNumber != null) {
@@ -614,6 +644,7 @@ fun AppNavHost(
                     composable(AccountRoutes.LOGIN) {
                         LoginScreen(
                             authRepository = authRepository,
+                            analyticsLogger = analyticsLogger,
                             onBack = { accountNav.popBackStack() },
                             onSignUp = {
                                 accountNav.navigate(AccountRoutes.SIGNUP) {
