@@ -50,6 +50,8 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.eslamielectric.android.R
+import com.eslamielectric.android.core.analytics.AnalyticsEvents
+import com.eslamielectric.android.core.analytics.AnalyticsLogger
 import com.eslamielectric.android.core.network.ProfilePatchRequest
 import com.eslamielectric.android.core.network.SignupRequest
 import com.eslamielectric.android.feature.auth.AccountViewModel
@@ -237,6 +239,7 @@ fun AccountHomeScreen(
 @Composable
 fun LoginScreen(
     authRepository: AuthRepository,
+    analyticsLogger: AnalyticsLogger,
     onBack: () -> Unit,
     onSignUp: () -> Unit,
     onForgotPassword: () -> Unit,
@@ -250,6 +253,7 @@ fun LoginScreen(
 
     LaunchedEffect(state) {
         if (state is AuthFormState.Success && authRepository.isLoggedIn()) {
+            analyticsLogger.logEvent(AnalyticsEvents.LOGIN_SUCCESS)
             onLoggedIn()
         }
     }

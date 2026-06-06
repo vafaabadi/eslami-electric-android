@@ -16,6 +16,7 @@ val googleServicesFile = rootProject.file("app/google-services.json")
 val hasGoogleServices = googleServicesFile.exists()
 if (hasGoogleServices) {
     apply(plugin = "com.google.gms.google-services")
+    apply(plugin = "com.google.firebase.crashlytics")
 }
 
 val keystorePropertiesFile = rootProject.file("keystore.properties")
@@ -70,7 +71,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = versionCodeOverride ?: 12
-        versionName = "1.0.12"
+        versionName = "1.0.13"
 
         buildConfigField("String", "API_BASE_URL", buildConfigString(resolveApiBaseUrl(forDebug = false)))
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
@@ -191,8 +192,13 @@ dependencies {
     // defensively in PushTokenManager.
     implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-crashlytics-ktx")
     // Task.await() bridge for Firebase Task → coroutine suspend functions.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
+
+    // Google Play In-App Review — no-op on emulator / non-Play installs; handled in ReviewPromptManager.
+    implementation("com.google.android.play:review-ktx:2.0.2")
 
     debugImplementation("androidx.compose.ui:ui-tooling")
 

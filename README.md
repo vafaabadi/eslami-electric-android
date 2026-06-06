@@ -384,6 +384,46 @@ gradlew.bat assembleDebug
 
 User preferences (master + per channel) live at `GET/PATCH /api/me/push-preferences` and surface in **Account → Notifications**.
 
+## Firebase Analytics
+
+Analytics is enabled when `app/google-services.json` is present (`BuildConfig.FCM_CONFIGURED = true`). Without it, [`AnalyticsLogger`](app/src/main/java/com/eslamielectric/android/core/analytics/AnalyticsLogger.kt) is a no-op — CI builds stay green.
+
+### Events logged
+
+| Event | Type | When |
+|-------|------|------|
+| `screen_view` | Firebase standard | Bottom-nav tabs: `home`, `products`, `basket` (`screen_name` / `screen_class` params) |
+| `checkout_started` | Custom | User taps **Pay with Stripe** on checkout |
+| `order_completed` | Custom | Checkout success result screen (`order_number`, `order_id` when available) |
+| `login_success` | Custom | Email/password or Google sign-in completes |
+
+### Setup
+
+1. Firebase Console → your project → **Analytics** is on by default for new projects.
+2. Place `google-services.json` at `app/google-services.json` and rebuild.
+3. DebugView: `adb shell setprop debug.firebase.analytics.app com.eslamielectric.android` then watch **Analytics → DebugView** in Firebase Console.
+
+## Firebase Crashlytics
+
+Crashlytics Gradle plugin and `firebase-crashlytics-ktx` apply only when `google-services.json` exists (same conditional as FCM).
+
+### Setup
+
+1. Firebase Console → **Build → Crashlytics** → **Enable Crashlytics** for the Android app.
+2. Rebuild with `google-services.json` present; release builds from Play Internal Testing will report crashes automatically.
+3. CI without `google-services.json` skips the plugin — no Crashlytics SDK initialisation in those builds.
+
+## Google Play In-App Review
+
+[`ReviewPromptManager`](app/src/main/java/com/eslamielectric/android/core/review/ReviewPromptManager.kt) requests a Play review dialog on the **checkout success** screen when:
+
+- The user has completed **≥ 2 successful orders** (counted once per `order_id` / `order_number`), **and**
+- No review prompt was shown in the last **90 days**.
+
+First order never prompts. Third+ orders within 90 days after a prompt do not re-prompt. Emulator, debug sideloads, and non-Play installs no-op gracefully.
+
+Test eligibility logic: `./gradlew testDebugUnitTest --tests "*.ReviewPromptManagerTest"`.
+
 ## Phase 4 — Checkout (done)
 
 1. Start the web API with Stripe **test** keys: `npm start` in `cursor-my-web-app` (port **3000**).
