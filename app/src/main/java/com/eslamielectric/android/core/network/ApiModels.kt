@@ -274,6 +274,12 @@ data class PushTokenRegisterResponse(
 data class PushTokenDeleteRequest(val token: String)
 
 @Serializable
+data class BasketActivityRequest(val items: List<com.eslamielectric.android.core.data.BasketItem>)
+
+@Serializable
+data class BasketActivityResponse(val ok: Boolean = true, val itemCount: Int? = null)
+
+@Serializable
 data class PushChannelPreferences(
     val orders: Boolean = true,
     val promotions: Boolean = true,

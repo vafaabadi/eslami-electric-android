@@ -71,7 +71,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = versionCodeOverride ?: 12
-        versionName = "1.0.13"
+        versionName = "1.0.14"
 
         buildConfigField("String", "API_BASE_URL", buildConfigString(resolveApiBaseUrl(forDebug = false)))
         buildConfigField("String", "SUPABASE_URL", buildConfigString(supabaseUrl))
