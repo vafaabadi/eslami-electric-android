@@ -59,7 +59,8 @@ fun resolveApiBaseUrl(forDebug: Boolean): String {
     }
 }
 
-// CI passes -PversionCode=… (play-internal.yml); local builds use default below.
+// CI passes -PversionCode=… (play-internal.yml: run_number + 100); local builds use default below.
+// Manual Play uploads must exceed the highest versionCode on internal track (118 live as of 2026-06-08).
 val versionCodeOverride = (project.findProperty("versionCode") as String?)?.toIntOrNull()
 
 android {
@@ -70,7 +71,7 @@ android {
         applicationId = "com.eslamielectric.android"
         minSdk = 26
         targetSdk = 35
-        versionCode = versionCodeOverride ?: 12
+        versionCode = versionCodeOverride ?: 121
         versionName = "1.0.14"
 
         buildConfigField("String", "API_BASE_URL", buildConfigString(resolveApiBaseUrl(forDebug = false)))

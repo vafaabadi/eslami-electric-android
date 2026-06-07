@@ -108,9 +108,11 @@ Override for CI/emulator smoke: `gradlew assembleDebug -PapiBaseUrl=https://www.
 | `versionCode` | `app/build.gradle.kts` → `defaultConfig` | **Integer, must increase** on every Play upload |
 | `versionName` | same | User-visible semver (e.g. `1.0.0`, `1.0.1`) |
 
-**Local / manual builds:** default **versionCode 11**, **versionName 1.0.10** (bump in `build.gradle.kts` when uploading by hand).
+**Local / manual builds:** default **versionCode 121**, **versionName 1.0.14** (must stay **above** the highest code already on Play internal track — CI uploads use `run_number + 100`, currently **118** live).
 
-**CI (main):** `play-internal.yml` passes `-PversionCode` = `github.run_number + 100` (no per-push commit). Raise the `100` offset in the workflow if Play already has a higher code.
+**CI (main):** `play-internal.yml` passes `-PversionCode` = `github.run_number + 100` (no per-push commit). Next CI run ≈ **121** (`run_number` 21 + 100). Raise the `100` offset only if Play max outpaces CI.
+
+**Play error “doesn't allow any existing users to upgrade”:** the AAB `versionCode` is lower than what's already on internal testing (usually a manual `bundleRelease` with an outdated gradle default while CI already uploaded a higher code).
 
 ## Launch crash debugging
 
