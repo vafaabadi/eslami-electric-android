@@ -69,10 +69,20 @@ class PendingCheckoutStoreTest {
     @Test
     fun clearAll_removesSessionAndPendingOrder() {
         store.setSessionId("sess_clear")
+        store.setCryptoPaymentId("pay-1")
         store.setPendingEditOrder("id", "ORD-1", "pickup", null)
         store.clearAll()
         assertNull(store.getSessionId())
+        assertNull(store.getCryptoPaymentId())
         assertNull(store.getPendingEditOrder())
+    }
+
+    @Test
+    fun cryptoPaymentId_roundTripsAndClears() {
+        store.setCryptoPaymentId("5077125051")
+        assertEquals("5077125051", store.getCryptoPaymentId())
+        store.setCryptoPaymentId(null)
+        assertNull(store.getCryptoPaymentId())
     }
 
     @Test

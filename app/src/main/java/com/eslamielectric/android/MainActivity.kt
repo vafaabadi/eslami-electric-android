@@ -15,6 +15,9 @@ import com.eslamielectric.android.ui.navigation.AppNavHost
 import com.eslamielectric.android.ui.navigation.CheckoutRoutes
 import com.eslamielectric.android.ui.theme.EslamiElectricTheme
 import com.eslamielectric.android.util.LocaleHelper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -121,6 +124,11 @@ class MainActivity : ComponentActivity() {
         val orderId = data.getQueryParameter("orderId")
         val guestToken = data.getQueryParameter("guestToken")
         deepLinkCheckoutResultRoute = CheckoutRoutes.result(success, orderNumber, orderId, guestToken)
+        if (success) {
+            CoroutineScope(Dispatchers.IO).launch {
+                app.checkoutRepository.finalizeSuccessfulCheckout()
+            }
+        }
     }
 
     private fun applyPushDeepLink(intent: Intent?) {

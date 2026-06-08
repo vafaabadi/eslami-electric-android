@@ -98,7 +98,10 @@ fun AppNavHost(
     val basketCount = basketRepository.itemCount(basketItems)
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-    val pendingEditOrderLabel = checkoutRepository.getPendingEditOrder()?.orderLabel
+    val checkoutStateRevision by checkoutRepository.checkoutStateRevision.collectAsState()
+    val pendingEditOrderLabel = remember(checkoutStateRevision) {
+        checkoutRepository.getPendingEditOrderLabel()
+    }
 
     val editPendingOrder: (String) -> Unit = { orderId ->
         scope.launch {
@@ -349,6 +352,9 @@ fun AppNavHost(
                 )
             }
             composable(AppDestinations.Basket.route) {
+                LaunchedEffect(Unit) {
+                    checkoutRepository.reconcileStalePendingEdit()
+                }
                 BasketScreen(
                     items = basketItems,
                     basketRepository = basketRepository,
@@ -419,6 +425,9 @@ fun AppNavHost(
                 val canClaimAccount = success && canTrackGuestOrder && !authRepository.isLoggedIn()
                 LaunchedEffect(success, orderId) {
                     if (!success) return@LaunchedEffect
+                    scope.launch {
+                        checkoutRepository.finalizeSuccessfulCheckout()
+                    }
                     analyticsLogger.logEvent(
                         AnalyticsEvents.ORDER_COMPLETED,
                         buildMap {

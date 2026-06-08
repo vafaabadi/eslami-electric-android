@@ -18,6 +18,15 @@ class PendingCheckoutStore(context: Context) {
         }.apply()
     }
 
+    fun getCryptoPaymentId(): String? =
+        prefs.getString(KEY_CRYPTO_PAYMENT_ID, null)?.takeIf { it.isNotBlank() }
+
+    fun setCryptoPaymentId(paymentId: String?) {
+        prefs.edit().apply {
+            if (paymentId.isNullOrBlank()) remove(KEY_CRYPTO_PAYMENT_ID) else putString(KEY_CRYPTO_PAYMENT_ID, paymentId)
+        }.apply()
+    }
+
     fun getPendingEditOrder(): PendingEditOrder? {
         val orderId = prefs.getString(KEY_PENDING_ORDER_ID, null)?.takeIf { it.isNotBlank() } ?: return null
         return PendingEditOrder(
@@ -81,6 +90,7 @@ class PendingCheckoutStore(context: Context) {
     companion object {
         private const val PREFS_NAME = "eslami_pending_checkout"
         private const val KEY_SESSION_ID = "stripe_session_id"
+        private const val KEY_CRYPTO_PAYMENT_ID = "crypto_payment_id"
         private const val KEY_PENDING_ORDER_ID = "pending_order_id"
         private const val KEY_PENDING_ORDER_LABEL = "pending_order_label"
         private const val KEY_PENDING_FULFILLMENT = "pending_fulfillment"

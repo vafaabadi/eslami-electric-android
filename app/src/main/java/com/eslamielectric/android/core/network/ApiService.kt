@@ -56,6 +56,27 @@ interface ApiService {
         @Body body: CreateCheckoutSessionRequest
     ): CheckoutSessionResponse
 
+    @POST("api/create-crypto-payment")
+    suspend fun createCryptoPayment(
+        @Header("Authorization") authorization: String?,
+        @Body body: CreateCheckoutSessionRequest
+    ): CreateCryptoPaymentResponse
+
+    @GET("api/crypto-pay-currencies")
+    suspend fun getCryptoPayCurrencies(): CryptoPayCurrenciesResponse
+
+    @GET("api/crypto-payments/{paymentId}/status")
+    suspend fun getCryptoPaymentStatus(@Path("paymentId") paymentId: String): CryptoPaymentStatusResponse
+
+    @GET("api/orders/by-crypto-payment/{paymentId}")
+    suspend fun getOrderByCryptoPayment(@Path("paymentId") paymentId: String): OrderDto
+
+    @POST("api/orders/confirm-by-crypto/{paymentId}")
+    suspend fun confirmOrderByCrypto(
+        @Path("paymentId") paymentId: String,
+        @Body body: EmptyRequest = EmptyRequest
+    ): ConfirmByCryptoResponse
+
     @GET("api/orders")
     suspend fun getOrders(@Header("Authorization") authorization: String): List<OrderDto>
 

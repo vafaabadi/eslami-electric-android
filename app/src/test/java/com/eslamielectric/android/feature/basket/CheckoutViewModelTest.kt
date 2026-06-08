@@ -14,6 +14,7 @@ import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -40,6 +41,18 @@ class CheckoutViewModelTest {
     @Before
     fun setUp() {
         every { checkoutRepository.isLoggedIn() } returns false
+        every { checkoutRepository.getPendingCryptoPaymentId() } returns null
+        coEvery { checkoutRepository.loadCryptoPayCurrencies() } returns
+            com.eslamielectric.android.core.network.CryptoPayCurrenciesResponse(
+                defaultPayCurrency = "usdc",
+                currencies = listOf(
+                    com.eslamielectric.android.core.network.CryptoPayCurrencyDto(
+                        payCurrency = "usdc",
+                        networkLabel = "Ethereum (ERC-20)",
+                        label = "Ethereum (ERC-20) (USDC)"
+                    )
+                )
+            )
         viewModel = CheckoutViewModel(checkoutRepository, authRepository, basketRepository)
     }
 
@@ -51,7 +64,7 @@ class CheckoutViewModelTest {
     @Test
     fun pay_rejectsEmptyBasket() = runTest {
         coEvery { basketRepository.getItemsOnce() } returns emptyList()
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann", "", "", "", "", "")
         advanceUntilIdle()
         val state = viewModel.uiState.value
         assertTrue(state is CheckoutUiState.Error)
@@ -63,7 +76,7 @@ class CheckoutViewModelTest {
         coEvery { basketRepository.getItemsOnce() } returns listOf(
             BasketItem(id = "p", name = "P", price = 1.0)
         )
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "bad-email", "Ann Lee", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "bad-email", "Ann Lee", "", "", "", "", "")
         advanceUntilIdle()
         val state = viewModel.uiState.value as CheckoutUiState.Error
         assertEquals("A valid email is required.", state.message)
@@ -74,7 +87,7 @@ class CheckoutViewModelTest {
         coEvery { basketRepository.getItemsOnce() } returns listOf(
             BasketItem(id = "p", name = "P", price = 1.0)
         )
-        viewModel.pay(context, FULFILLMENT_DELIVERY, "en", "a@b.com", "Ann Lee", "", "123", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_DELIVERY, "en", "a@b.com", "Ann Lee", "", "123", "", "", "")
         advanceUntilIdle()
         val state = viewModel.uiState.value as CheckoutUiState.Error
         assertEquals("Delivery address must be at least 5 characters.", state.message)
@@ -88,9 +101,31 @@ class CheckoutViewModelTest {
         coEvery {
             checkoutRepository.startCheckout(any(), any())
         } returns CheckoutStartResult.Opened("sess", "https://stripe.test")
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
         advanceUntilIdle()
         assertEquals(CheckoutUiState.StripeOpened, viewModel.uiState.value)
+    }
+
+    @Test
+    fun payCrypto_startsCryptoCheckout() = runTest {
+        coEvery { basketRepository.getItemsOnce() } returns listOf(
+            BasketItem(id = "p", name = "P", price = 1.0)
+        )
+        coEvery {
+            checkoutRepository.startCryptoCheckout(any(), "usdc")
+        } returns CryptoCheckoutStartResult.Ready(
+            com.eslamielectric.android.core.network.CreateCryptoPaymentResponse(
+                paymentId = "pay-1",
+                payAddress = "0xabc",
+                payAmount = "1.0",
+                payCurrency = "usdc",
+                pollInMs = 3000
+            )
+        )
+        viewModel.pay(context, PAYMENT_CRYPTO, "usdc", FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
+        runCurrent()
+        assertTrue(viewModel.uiState.value is CheckoutUiState.CryptoActive)
+        viewModel.cancelCryptoCheckout()
     }
 
     @Test
@@ -110,6 +145,7 @@ class CheckoutViewModelTest {
         viewModel.dismissPendingWithoutPayment()
         advanceUntilIdle()
         coVerify { checkoutRepository.clearPendingSession() }
+        coVerify { checkoutRepository.clearPendingCryptoPayment() }
     }
 
     @Test
@@ -121,7 +157,7 @@ class CheckoutViewModelTest {
         )
         coEvery { checkoutRepository.startCheckout(any(), any()) } throws
             CheckoutException.ProfileIncomplete("Complete your profile", listOf("mobile", "address"))
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "", "", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "", "", "", "", "", "", "")
         advanceUntilIdle()
         val state = viewModel.uiState.value as CheckoutUiState.Error
         assertTrue(state.profileIncomplete)
@@ -134,7 +170,7 @@ class CheckoutViewModelTest {
             BasketItem(id = "p", name = "P", price = 1.0)
         )
         coEvery { checkoutRepository.startCheckout(any(), any()) } throws CheckoutException.SessionExpired
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
         advanceUntilIdle()
         assertEquals(CheckoutUiState.SessionExpired, viewModel.uiState.value)
     }
@@ -146,7 +182,7 @@ class CheckoutViewModelTest {
         )
         coEvery { checkoutRepository.startCheckout(any(), any()) } throws
             CheckoutException.RateLimited("Too many checkout attempts")
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
         advanceUntilIdle()
         val state = viewModel.uiState.value as CheckoutUiState.Error
         assertEquals("Too many checkout attempts", state.message)
@@ -161,7 +197,7 @@ class CheckoutViewModelTest {
         )
         coEvery { checkoutRepository.startCheckout(any(), any()) } returns
             CheckoutStartResult.Opened("sess", "https://stripe.test")
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "", "", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "", "", "", "", "", "", "")
         advanceUntilIdle()
         assertEquals(CheckoutUiState.StripeOpened, viewModel.uiState.value)
     }
@@ -189,7 +225,7 @@ class CheckoutViewModelTest {
     @Test
     fun clearError_resetsErrorState() = runTest {
         coEvery { basketRepository.getItemsOnce() } returns emptyList()
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann", "", "", "", "", "")
         advanceUntilIdle()
         viewModel.clearError()
         assertEquals(CheckoutUiState.Idle, viewModel.uiState.value)
@@ -202,7 +238,7 @@ class CheckoutViewModelTest {
         )
         coEvery { checkoutRepository.startCheckout(any(), any()) } returns
             CheckoutStartResult.Opened("sess", "https://stripe.test")
-        viewModel.pay(context, FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
+        viewModel.pay(context, PAYMENT_CARD, "usdc", FULFILLMENT_COLLECTION, "en", "a@b.com", "Ann Lee", "", "", "", "", "")
         advanceUntilIdle()
         viewModel.resetAfterStripe()
         assertEquals(CheckoutUiState.Idle, viewModel.uiState.value)

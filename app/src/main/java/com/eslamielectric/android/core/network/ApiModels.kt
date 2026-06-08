@@ -173,11 +173,71 @@ data class CreateCheckoutSessionRequest(
     val shippingAddress: ShippingAddressRequest? = null,
     val locale: String? = null,
     val fulfillmentType: String? = null,
-    val pendingOrderId: String? = null
+    val pendingOrderId: String? = null,
+    val payCurrency: String? = null
 )
 
 @Serializable
 data class CheckoutSessionResponse(val url: String, val sessionId: String)
+
+@Serializable
+data class CreateCryptoPaymentResponse(
+    val paymentId: String,
+    val payAddress: String? = null,
+    val payAmount: String? = null,
+    val payCurrency: String? = null,
+    val networkLabel: String? = null,
+    val network: String? = null,
+    val invoiceUrl: String? = null,
+    val gatewayUrl: String? = null,
+    val orderId: String? = null,
+    val orderNumber: String? = null,
+    @SerialName("guestAccessToken") val guestAccessToken: String? = null,
+    val status: String? = null,
+    val isFinal: Boolean? = null,
+    @SerialName("pollInMs") val pollInMs: Int? = null,
+    @SerialName("amountTotal") val amountTotal: Int? = null,
+    val currency: String? = null,
+    val successUrl: String? = null,
+    @SerialName("payment_method") val paymentMethod: String? = null
+)
+
+@Serializable
+data class CryptoPayCurrencyDto(
+    val payCurrency: String,
+    val networkLabel: String,
+    val network: String? = null,
+    val label: String? = null
+)
+
+@Serializable
+data class CryptoPayCurrenciesResponse(
+    val defaultPayCurrency: String? = null,
+    val currencies: List<CryptoPayCurrencyDto> = emptyList()
+)
+
+@Serializable
+data class CryptoPaymentStatusResponse(
+    val ok: Boolean? = null,
+    val status: String? = null,
+    val isFinal: Boolean? = null,
+    @SerialName("pollInMs") val pollInMs: Int? = null,
+    val payAddress: String? = null,
+    val payAmount: String? = null,
+    val payCurrency: String? = null,
+    val networkLabel: String? = null,
+    val network: String? = null,
+    val invoiceUrl: String? = null,
+    @SerialName("orderStatus") val orderStatus: String? = null,
+    val terminalFailure: Boolean? = null
+)
+
+@Serializable
+data class ConfirmByCryptoResponse(
+    val updated: Boolean? = null,
+    val status: String? = null,
+    @SerialName("paymentStatus") val paymentStatus: String? = null
+)
 
 @Serializable
 data class OrderDto(
@@ -194,7 +254,9 @@ data class OrderDto(
     @SerialName("shipping_address") val shippingAddress: JsonObject? = null,
     @SerialName("customer_email") val customerEmail: String? = null,
     @SerialName("customer_name") val customerName: String? = null,
-    @SerialName("guest_access_token") val guestAccessToken: String? = null
+    @SerialName("guest_access_token") val guestAccessToken: String? = null,
+    @SerialName("crypto_payment_id") val cryptoPaymentId: String? = null,
+    @SerialName("payment_method") val paymentMethod: String? = null
 )
 
 @Serializable

@@ -9,7 +9,10 @@ import com.eslamielectric.android.core.network.ApiService
 import com.eslamielectric.android.core.network.BasketDraftItemDto
 import com.eslamielectric.android.core.network.BasketDraftResponse
 import com.eslamielectric.android.core.network.CheckoutSessionResponse
+import com.eslamielectric.android.core.network.ConfirmByCryptoResponse
 import com.eslamielectric.android.core.network.CreateCheckoutSessionRequest
+import com.eslamielectric.android.core.network.CreateCryptoPaymentResponse
+import com.eslamielectric.android.core.network.CryptoPaymentStatusResponse
 import com.eslamielectric.android.core.network.OrderDto
 import io.mockk.coEvery
 import io.mockk.coVerify
@@ -147,6 +150,65 @@ class CheckoutRepositoryTest {
         coEvery { api.getOrderBySession("sess_open") } returns OrderDto(id = "o2", status = "open")
         val result = repository.handleReturnFromStripe("sess_open")
         assertTrue(result is CheckoutReturnResult.NotPaid)
+    }
+
+    @Test
+    fun reconcileStalePendingEdit_clearsPaidOrder() = runTest {
+        every { sessionStore.getToken() } returns "jwt-token"
+        every { pendingCheckoutStore.getPendingEditOrder() } returns
+            PendingCheckoutStore.PendingEditOrder(
+                orderId = "paid-order",
+                orderLabel = "ORD-ZYVUL5",
+                fulfillmentType = "delivery",
+                addressLine1 = null,
+                addressCity = null,
+                addressPostal = null,
+                addressExtra = null
+            )
+        coEvery { api.getOrders("Bearer jwt-token") } returns listOf(
+            OrderDto(id = "paid-order", status = "paid", orderNumber = "ORD-ZYVUL5")
+        )
+        repository.reconcileStalePendingEdit()
+        verify { pendingCheckoutStore.clearPendingEditOrder() }
+    }
+
+    @Test
+    fun startCryptoCheckout_persistsPaymentId() = runTest {
+        coEvery { basketRepository.getItemsOnce() } returns listOf(
+            BasketItem(id = "p1", name = "A", price = 5.0, quantity = 1)
+        )
+        coEvery { basketRepository.toCheckoutLineItems("en") } returns emptyList()
+        every { sessionStore.getToken() } returns null
+        every { pendingCheckoutStore.getPendingEditOrder() } returns null
+        coEvery {
+            api.createCryptoPayment(authorization = null, body = any())
+        } returns CreateCryptoPaymentResponse(
+            paymentId = "5077125051",
+            payAddress = "0xabc",
+            payAmount = "1.0",
+            payCurrency = "usdc"
+        )
+        val result = repository.startCryptoCheckout(
+            CheckoutInput(fulfillmentType = "collection", locale = "en"),
+            payCurrency = "usdc"
+        )
+        assertTrue(result is CryptoCheckoutStartResult.Ready)
+        verify { pendingCheckoutStore.setCryptoPaymentId("5077125051") }
+    }
+
+    @Test
+    fun handleReturnFromCrypto_clearsBasketWhenPaid() = runTest {
+        coEvery { api.getCryptoPaymentStatus("pay-1") } returns CryptoPaymentStatusResponse(
+            status = "finished",
+            orderStatus = "paid"
+        )
+        coEvery { api.confirmOrderByCrypto("pay-1") } returns ConfirmByCryptoResponse(updated = true, status = "paid")
+        coEvery { api.getOrderByCryptoPayment("pay-1") } returns OrderDto(id = "o-crypto", status = "paid")
+        val result = repository.handleReturnFromCrypto("pay-1")
+        assertTrue(result is CheckoutReturnResult.Paid)
+        coVerify { basketRepository.clear() }
+        verify { pendingCheckoutStore.clearPendingEditOrder() }
+        verify { pendingCheckoutStore.setCryptoPaymentId(null) }
     }
 
     private fun httpError(code: Int, body: String): HttpException {
