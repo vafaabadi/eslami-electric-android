@@ -245,6 +245,15 @@ class CheckoutViewModelTest {
     }
 
     @Test
+    fun init_usesFallbackCurrenciesWhenApiFails() = runTest {
+        coEvery { checkoutRepository.loadCryptoPayCurrencies() } throws RuntimeException("network error")
+        viewModel = CheckoutViewModel(checkoutRepository, authRepository, basketRepository)
+        advanceUntilIdle()
+        assertEquals(CheckoutViewModel.FALLBACK_CRYPTO_CURRENCIES, viewModel.cryptoCurrencies.value)
+        assertEquals("usdc", viewModel.defaultPayCurrency.value)
+    }
+
+    @Test
     fun init_fetchesProfileWhenLoggedIn() = runTest {
         every { checkoutRepository.isLoggedIn() } returns true
         val profile = com.eslamielectric.android.core.network.ProfileDto(id = "u1", type = "individual")

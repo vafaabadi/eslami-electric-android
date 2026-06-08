@@ -275,8 +275,7 @@ fun CheckoutScreen(
                     selected = paymentMethod == PAYMENT_CRYPTO,
                     onClick = { paymentMethod = PAYMENT_CRYPTO },
                     label = { Text(stringResource(R.string.checkout_pay_crypto)) },
-                    modifier = Modifier.testTag("chip_payment_crypto"),
-                    enabled = cryptoCurrencies.isNotEmpty()
+                    modifier = Modifier.testTag("chip_payment_crypto")
                 )
             }
 

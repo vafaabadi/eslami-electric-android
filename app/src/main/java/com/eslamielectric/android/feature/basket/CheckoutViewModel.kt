@@ -80,9 +80,14 @@ class CheckoutViewModel(
         viewModelScope.launch {
             runCatching { checkoutRepository.loadCryptoPayCurrencies() }
                 .onSuccess { response ->
-                    _cryptoCurrencies.value = response.currencies
+                    val currencies = response.currencies.ifEmpty { FALLBACK_CRYPTO_CURRENCIES }
+                    _cryptoCurrencies.value = currencies
                     _defaultPayCurrency.value = response.defaultPayCurrency
-                        ?: response.currencies.firstOrNull()?.payCurrency
+                        ?: currencies.firstOrNull()?.payCurrency
+                }
+                .onFailure {
+                    _cryptoCurrencies.value = FALLBACK_CRYPTO_CURRENCIES
+                    _defaultPayCurrency.value = FALLBACK_CRYPTO_CURRENCIES.first().payCurrency
                 }
         }
         checkoutRepository.getPendingCryptoPaymentId()?.let { paymentId ->
@@ -378,6 +383,14 @@ class CheckoutViewModel(
 
     companion object {
         private val EMAIL_RE = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")
+
+        /** Shown when /api/crypto-pay-currencies is unavailable; matches production allowlist. */
+        val FALLBACK_CRYPTO_CURRENCIES = listOf(
+            CryptoPayCurrencyDto("usdc", "Ethereum (ERC-20)", "eth", "Ethereum (ERC-20) (USDC)"),
+            CryptoPayCurrencyDto("usdcmatic", "Polygon", "matic", "Polygon (USDC)"),
+            CryptoPayCurrencyDto("usdtsol", "Solana", "sol", "Solana (USDT)"),
+            CryptoPayCurrencyDto("usdtbsc", "BNB Smart Chain", "bsc", "BNB Smart Chain (USDT)")
+        )
     }
 }
 
