@@ -177,6 +177,7 @@ Use this before promoting beyond internal testing.
 | **App signing** | Enable **Play App Signing**; keep upload keystore backup offline |
 | **Privacy policy** | **https://www.eslamielectric.com/en/privacy** (also `/fa/privacy`). Paste this URL in Play Console → App content → Privacy policy |
 | **Data safety** | Declare: account info (email, profile), order/payment data processed via your backend; payments via **Stripe**; **no data sold** |
+| **Advertising ID** | **App content → Advertising ID** → **No** (manifest strips `AD_ID` from Firebase Analytics — see [Firebase Analytics](#firebase-analytics)) |
 | **Content rating** | Complete IARC questionnaire (shopping / payments) |
 | **Store listing** | Short + full description — copy in [`play-store/store-listing-en.md`](play-store/store-listing-en.md) and [`play-store/store-listing-fa.md`](play-store/store-listing-fa.md); **EN + FA** screenshots (phone 16:9 or 9:16); feature graphic 1024×500; app icon **`play-store/icon-512.png`** (512×512 PNG) |
 | **Target API** | `targetSdk` / `compileSdk` **35** (adjust when Google raises minimums) |
@@ -398,6 +399,8 @@ Only logged-in users with FCM tokens receive abandoned-basket pushes (promotions
 ## Firebase Analytics
 
 Analytics is enabled when `app/google-services.json` is present (`BuildConfig.FCM_CONFIGURED = true`). Without it, [`AnalyticsLogger`](app/src/main/java/com/eslamielectric/android/core/analytics/AnalyticsLogger.kt) is a no-op — CI builds stay green.
+
+`firebase-analytics-ktx` would merge `com.google.android.gms.permission.AD_ID` (via `play-services-measurement` / `play-services-ads-identifier`). The app does not show ads, so `AndroidManifest.xml` removes that permission with `tools:node="remove"`. Events still log to Firebase; measurement simply does not use the advertising ID. Keep Play Console → **App content → Advertising ID** set to **No**.
 
 ### Events logged
 
